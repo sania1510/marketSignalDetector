@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Market Signal Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+:root {
+  --bg:        #f5f0e8;
+  --paper:     #faf7f2;
+  --ink:       #1a1410;
+  --ink2:      #3d3530;
+  --muted:     #8a7f75;
+  --rule:      #d4ccc0;
+  --amber:     #c8860a;
+  --amber2:    #e8a020;
+  --buy:       #27633a;
+  --sell:      #c0392b;
+  --hold:      #7a6520;
+  --risk:      #d4580a;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-serif:'DM Serif Display', serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+
+/* HEADER */
+header{background:var(--ink);color:var(--bg);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--amber);position:sticky;top:0;z-index:100}
+.logo{font-family:var(--font-serif);font-size:1.15rem;color:var(--bg)}
+.logo em{font-style:italic;color:var(--amber2)}
+.header-right{display:flex;align-items:center;gap:1.5rem}
+
+/* YEAR SELECTOR */
+.year-selector{display:flex;align-items:center;gap:0.35rem}
+.year-selector label{font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#8a7f75;margin-right:0.2rem}
+.year-btn{padding:0.22rem 0.7rem;font-family:var(--font-mono);font-size:0.63rem;font-weight:700;letter-spacing:0.06em;border:1px solid #3a3530;background:transparent;color:#8a7f75;cursor:pointer;transition:all 0.15s;line-height:1.4}
+.year-btn:hover{color:var(--bg);border-color:#6a6560}
+.year-btn.active{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+
+.ws-status{display:flex;align-items:center;gap:0.4rem;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:#8a7f75}
+.ws-dot{width:6px;height:6px;border-radius:50%;background:#4a4a4a}
+.ws-dot.live{background:#5aaa6a;box-shadow:0 0 5px #5aaa6a;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+#lastUpdated{font-size:0.62rem;letter-spacing:0.08em;color:#8a7f75}
+
+/* YEAR BANNER */
+.year-banner{background:var(--amber);color:var(--ink);text-align:center;padding:0.28rem;font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase}
+
+/* NAV */
+nav{background:var(--paper);border-bottom:2px solid var(--ink);padding:0 2rem;display:flex;overflow-x:auto}
+.tab{padding:0.7rem 1.4rem;font-family:var(--font-mono);font-size:0.65rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber);background:var(--bg)}
+
+/* MAIN */
+main{max-width:1360px;margin:0 auto;padding:2rem 2rem 4rem}
+.page{display:none;animation:appear 0.25s ease}
+.page.active{display:block}
+@keyframes appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.section-head{display:flex;align-items:baseline;gap:1rem;margin-bottom:1.25rem;border-bottom:1px solid var(--rule);padding-bottom:0.5rem}
+.section-head h2{font-family:var(--font-serif);font-size:1.1rem;font-weight:400;color:var(--ink)}
+.section-head span{font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)}
+
+.card{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--ink);padding:1.25rem;position:relative}
+.card-title{font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;font-weight:600}
+
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:1.5rem;background:var(--rule);border:1px solid var(--rule);border-top:3px solid var(--ink)}
+.grid-4 .card{border:none;border-top:none;border-right:1px solid var(--rule)}
+.grid-4 .card:last-child{border-right:none}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+
+.stat-label{font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:0.4rem}
+.stat-value{font-family:var(--font-serif);font-size:2rem;line-height:1;color:var(--ink);margin-bottom:0.2rem}
+.stat-sub{font-size:0.62rem;color:var(--muted)}
+
+.signal-badge{display:inline-flex;align-items:center;padding:0.2rem 0.7rem;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;border:1.5px solid}
+.signal-badge.BUY       {color:var(--buy);border-color:var(--buy);background:rgba(39,99,58,0.07)}
+.signal-badge.SELL      {color:var(--sell);border-color:var(--sell);background:rgba(192,57,43,0.07)}
+.signal-badge.HOLD      {color:var(--hold);border-color:var(--hold);background:rgba(122,101,32,0.07)}
+.signal-badge.RISK_ALERT{color:var(--risk);border-color:var(--risk);background:rgba(212,88,10,0.07)}
+
+.data-table{width:100%;border-collapse:collapse;font-size:0.7rem}
+.data-table th{text-align:left;padding:0.45rem 0.75rem;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:2px solid var(--ink);background:var(--bg)}
+.data-table td{padding:0.4rem 0.75rem;border-bottom:1px solid var(--rule);color:var(--ink2)}
+.data-table tr:hover td{background:rgba(200,134,10,0.05)}
+
+.sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:1.5rem}
+.form-group label{display:flex;justify-content:space-between;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:0.5rem}
+.form-group label span{color:var(--amber);font-style:italic}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--rule);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--ink);border:2px solid var(--amber);cursor:pointer}
+
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.65rem 2rem;background:var(--ink);color:var(--bg);border:none;font-family:var(--font-mono);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;border-bottom:3px solid var(--amber)}
+.btn:hover{background:var(--ink2);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px);border-bottom-width:1px}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+.sim-result{display:none;margin-top:1.5rem;border-top:2px solid var(--ink);padding-top:1.25rem;animation:appear 0.3s ease}
+.score-bar-wrap{margin-bottom:0.75rem}
+.score-bar-label{display:flex;justify-content:space-between;font-size:0.6rem;color:var(--muted);margin-bottom:0.3rem;letter-spacing:0.08em;text-transform:uppercase}
+.score-bar-track{height:6px;background:var(--rule);position:relative}
+.score-bar-fill{position:absolute;height:100%;transition:width 0.4s ease,left 0.4s ease}
+.score-bar-mid{position:absolute;left:50%;top:-2px;width:1px;height:10px;background:var(--muted)}
+.rationale-list{list-style:none}
+.rationale-list li{font-size:0.68rem;color:var(--ink2);padding:0.3rem 0 0.3rem 1.2rem;border-bottom:1px dotted var(--rule);position:relative}
+.rationale-list li::before{content:'→';position:absolute;left:0;color:var(--amber);font-weight:700}
+
+.stress-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem}
+.stress-card{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--ink);padding:1.25rem}
+.stress-card.good{border-top-color:var(--buy)}.stress-card.warn{border-top-color:var(--hold)}
+.stress-card.bad{border-top-color:var(--sell)}.stress-card.alert{border-top-color:var(--risk)}
+.stress-name{font-family:var(--font-serif);font-size:1rem;color:var(--ink);margin-bottom:0.15rem}
+.stress-period{font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;margin-bottom:1rem}
+.stress-metrics{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.sm-item{display:flex;flex-direction:column;gap:0.15rem}
+.sm-val{font-family:var(--font-serif);font-size:1.2rem;line-height:1}
+.sm-lbl{font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.stress-note{font-size:0.62rem;color:var(--muted);line-height:1.6;border-left:2px solid var(--rule);padding-left:0.75rem}
+
+.live-prediction-meta{font-size:0.7rem;color:var(--muted);margin-top:1rem;padding-top:1rem;border-top:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:1.5rem}
+.live-prediction-meta strong{color:var(--ink2)}
+
+.month-filter{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1.25rem;padding:0.75rem;background:var(--paper);border:1px solid var(--rule)}
+.month-btn{padding:0.25rem 0.6rem;font-family:var(--font-mono);font-size:0.6rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--rule);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s}
+.month-btn:hover{color:var(--ink);border-color:var(--ink)}
+.month-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.month-btn.all{border-color:var(--amber);color:var(--amber)}
+.month-btn.all.active{background:var(--amber);color:var(--ink)}
+
+/* ── CHATBOT STYLES (unchanged base + new forecast cards) ── */
+.chat-msg{margin-bottom:1rem;display:flex}
+.chat-msg.user{justify-content:flex-end}.chat-msg.assistant{justify-content:flex-start}
+.chat-bubble{max-width:70%;padding:0.75rem 1rem;font-size:0.75rem;line-height:1.6;border:1px solid}
+.chat-msg.user .chat-bubble{background:var(--ink);color:var(--bg);border-color:var(--ink);border-radius:8px 8px 0 8px}
+.chat-msg.assistant .chat-bubble{background:var(--paper);color:var(--ink);border-color:var(--rule);border-radius:8px 8px 8px 0}
+
+/* ── NEW: 3-day forecast cards ── */
+.forecast-strip{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  background:var(--rule);
+  border:1px solid var(--rule);
+  border-top:3px solid var(--amber);
+  margin-top:1.25rem;
+  animation:appear 0.35s ease;
+}
+.forecast-day{
+  background:var(--paper);
+  padding:1rem 0.9rem;
+  position:relative;
+  overflow:hidden;
+}
+.forecast-day::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:var(--rule);
+  transition:background 0.3s;
+}
+.forecast-day.BUY::before       { background:var(--buy); }
+.forecast-day.SELL::before      { background:var(--sell); }
+.forecast-day.HOLD::before      { background:var(--hold); }
+.forecast-day.RISK_ALERT::before{ background:var(--risk); }
+
+.forecast-day-label{
+  font-size:0.55rem;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:700;
+  margin-bottom:0.6rem;
+}
+.forecast-signal-text{
+  font-family:var(--font-serif);
+  font-size:1.1rem;
+  line-height:1;
+  margin-bottom:0.4rem;
+}
+.forecast-signal-text.BUY       { color:var(--buy); }
+.forecast-signal-text.SELL      { color:var(--sell); }
+.forecast-signal-text.HOLD      { color:var(--hold); }
+.forecast-signal-text.RISK_ALERT{ color:var(--risk); }
+
+.forecast-score{
+  font-size:0.65rem;
+  color:var(--muted);
+  margin-bottom:0.3rem;
+}
+.forecast-prob{
+  font-size:0.62rem;
+  font-weight:700;
+  letter-spacing:0.06em;
+}
+
+/* probability bar inside each day card */
+.forecast-bar-track{
+  margin-top:0.6rem;
+  height:3px;
+  background:var(--rule);
+  position:relative;
+}
+.forecast-bar-fill{
+  position:absolute;
+  top:0;left:0;height:100%;
+  transition:width 0.5s ease;
+}
+
+/* ── chat quick suggestions ── */
+.chat-suggestions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.4rem;
+  margin-bottom:0.75rem;
+}
+.chat-suggestion-btn{
+  padding:0.25rem 0.7rem;
+  font-family:var(--font-mono);
+  font-size:0.6rem;
+  font-weight:600;
+  letter-spacing:0.07em;
+  border:1px solid var(--amber);
+  background:transparent;
+  color:var(--amber);
+  cursor:pointer;
+  transition:all 0.12s;
+}
+.chat-suggestion-btn:hover{
+  background:var(--amber);
+  color:var(--ink);
+}
+
+.chart-wrap{position:relative;width:100%}
+.loading{display:flex;align-items:center;justify-content:center;height:100px;gap:0.5rem;font-size:0.65rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.loading::before{content:'';width:12px;height:12px;border:2px solid var(--rule);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{font-size:0.7rem;color:var(--sell);padding:1rem;border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.04)}
+hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--rule)}
+
+@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2,.stress-grid{grid-template-columns:1fr}.sim-grid{grid-template-columns:repeat(2,1fr)}.year-selector label{display:none}.forecast-strip{grid-template-columns:1fr}}
+@media(max-width:600px){main{padding:1rem}.grid-4,.sim-grid{grid-template-columns:1fr}.grid-4{background:none;border:none;gap:1rem}.grid-4 .card{border:1px solid var(--rule);border-top:3px solid var(--ink)}.forecast-strip{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Market <em>Signal</em> Detector</div>
+  <div class="header-right">
+
+    <!-- ★ YEAR SELECTOR ★ -->
+    <div class="year-selector">
+      <label>Year</label>
+      <button class="year-btn" onclick="selectYear(2022,this)">2022</button>
+      <button class="year-btn" onclick="selectYear(2023,this)">2023</button>
+      <button class="year-btn" onclick="selectYear(2024,this)">2024</button>
+      <button class="year-btn" onclick="selectYear(2025,this)">2025</button>
+      <button class="year-btn active" onclick="selectYear(2026,this)">2026</button>
+    </div>
+
+    <div class="ws-status">
+      <div class="ws-dot" id="wsDot"></div>
+      <span id="wsLabel">connecting</span>
+    </div>
+    <span id="lastUpdated">—</span>
+  </div>
+</header>
+
+<div class="year-banner" id="yearBanner">Viewing: 2026 Data</div>
+
+<nav>
+  <button class="tab active" onclick="showPage('overview',this)">Overview</button>
+  <button class="tab" onclick="showPage('signals',this)">Signals</button>
+  <button class="tab" onclick="showPage('backtest',this)">Backtest</button>
+  <button class="tab" onclick="showPage('stress',this)">Stress Test</button>
+  <button class="tab" onclick="showPage('simulate',this)">Simulate</button>
+  <button class="tab" onclick="showPage('live',this)">Live</button>
+  <button class="tab" onclick="showPage('chatbot',this)">AI Chat</button>
+</nav>
+
+<main>
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <div class="section-head"><h2>Live Overview</h2><span id="ov-sub">2026 signal data</span></div>
+  <div class="grid-4" id="overviewStats">
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" id="priceChartTitle">SPY Price — 2026</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="priceChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="scoreChartTitle">Composite Score — 2026</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="scoreChart"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" id="sentChartTitle">Sentiment Trend — 2026</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="sentChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="distChartTitle">Signal Distribution — 2026</div>
+      <div class="chart-wrap" style="height:200px;display:flex;align-items:center;justify-content:center">
+        <canvas id="distChart" style="max-width:190px;max-height:190px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNALS -->
+<div class="page" id="page-signals">
+  <div class="section-head"><h2>Signal History</h2><span id="sig-sub">2026 — all generated signals</span></div>
+  <div class="month-filter" id="signalMonthFilter">
+    <button class="month-btn all active" onclick="filterSignalMonth('all',this)">All</button>
+    <button class="month-btn" onclick="filterSignalMonth('01',this)">Jan</button>
+    <button class="month-btn" onclick="filterSignalMonth('02',this)">Feb</button>
+    <button class="month-btn" onclick="filterSignalMonth('03',this)">Mar</button>
+    <button class="month-btn" onclick="filterSignalMonth('04',this)">Apr</button>
+    <button class="month-btn" onclick="filterSignalMonth('05',this)">May</button>
+    <button class="month-btn" onclick="filterSignalMonth('06',this)">Jun</button>
+    <button class="month-btn" onclick="filterSignalMonth('07',this)">Jul</button>
+    <button class="month-btn" onclick="filterSignalMonth('08',this)">Aug</button>
+    <button class="month-btn" onclick="filterSignalMonth('09',this)">Sep</button>
+    <button class="month-btn" onclick="filterSignalMonth('10',this)">Oct</button>
+    <button class="month-btn" onclick="filterSignalMonth('11',this)">Nov</button>
+    <button class="month-btn" onclick="filterSignalMonth('12',this)">Dec</button>
+  </div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title">Composite Score + Signal Markers</div>
+    <div class="chart-wrap" style="height:240px"><canvas id="signalHistChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="sigTableTitle">Signal Table — 2026</div>
+    <div id="signalTableWrap"><div class="loading"></div></div>
+  </div>
+</div>
+
+<!-- BACKTEST -->
+<div class="page" id="page-backtest">
+  <div class="section-head"><h2>Backtest Results</h2><span id="bt-sub">2026 strategy performance</span></div>
+  <div class="grid-4" id="backtestStats">
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title" id="equityChartTitle">Equity Curve vs SPY — 2026</div>
+    <div class="chart-wrap" style="height:280px"><canvas id="equityChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="ddChartTitle">Drawdown (%) — 2026</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="drawdownChart"></canvas></div>
+  </div>
+</div>
+
+<!-- STRESS — no year filter -->
+<div class="page" id="page-stress">
+  <div class="section-head"><h2>Stress Test</h2><span>historical scenario analysis</span></div>
+  <div class="stress-grid" id="stressGrid">
+    <div class="card"><div class="loading"></div></div>
+    <div class="card"><div class="loading"></div></div>
+  </div>
+</div>
+
+<!-- SIMULATE -->
+<div class="page" id="page-simulate">
+  <div class="section-head"><h2>Scenario Simulator</h2><span>adjust inputs — get signal</span></div>
+  <div class="card">
+    <div class="sim-grid">
+      <div class="form-group"><label>VIX <span id="vix-val">18.0</span></label>
+        <input type="range" id="sim-vix" min="10" max="80" value="18" step="0.5" oninput="document.getElementById('vix-val').textContent=parseFloat(this.value).toFixed(1)"/></div>
+      <div class="form-group"><label>Prob Up (LSTM) <span id="prob-val">0.50</span></label>
+        <input type="range" id="sim-prob" min="0" max="1" value="0.5" step="0.01" oninput="document.getElementById('prob-val').textContent=parseFloat(this.value).toFixed(2)"/></div>
+      <div class="form-group"><label>Sentiment <span id="sent-val">0.00</span></label>
+        <input type="range" id="sim-sent" min="-1" max="1" value="0" step="0.01" oninput="document.getElementById('sent-val').textContent=parseFloat(this.value).toFixed(2)"/></div>
+      <div class="form-group"><label>Sentiment Trend <span id="strend-val">0.00</span></label>
+        <input type="range" id="sim-strend" min="-0.5" max="0.5" value="0" step="0.01" oninput="document.getElementById('strend-val').textContent=parseFloat(this.value).toFixed(2)"/></div>
+      <div class="form-group"><label>Yield Curve <span id="yc-val">0.50</span></label>
+        <input type="range" id="sim-yc" min="-1" max="2" value="0.5" step="0.01" oninput="document.getElementById('yc-val').textContent=parseFloat(this.value).toFixed(2)"/></div>
+      <div class="form-group"><label>Bullish Ratio <span id="br-val">0.40</span></label>
+        <input type="range" id="sim-br" min="0" max="1" value="0.4" step="0.01" oninput="document.getElementById('br-val').textContent=parseFloat(this.value).toFixed(2)"/></div>
+    </div>
+    <button class="btn" id="simBtn" onclick="runSimulate()">▶ Run Scenario</button>
+    <div class="sim-result" id="simResult">
+      <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+        <div id="simSignalBadge"></div>
+        <div><div class="stat-label">Composite Score</div><div class="stat-value" id="simScore" style="font-size:1.5rem">—</div></div>
+        <div><div class="stat-label">Strength</div><div class="stat-value" id="simStrength" style="font-size:1.5rem;text-transform:capitalize">—</div></div>
+        <div><div class="stat-label">Confidence</div><div class="stat-value" id="simConf" style="font-size:1.5rem">—</div></div>
+      </div>
+      <div class="card-title" style="margin-bottom:0.75rem">Score Breakdown</div>
+      <div id="simBars"></div>
+      <div class="card-title" style="margin:1rem 0 0.5rem">Rationale</div>
+      <ul class="rationale-list" id="simRationale"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE -->
+<div class="page" id="page-live">
+  <div class="section-head"><h2>Live Market</h2><span>today's signal &amp; tomorrow's prediction</span></div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title">Today's Prediction</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2rem;margin-bottom:1rem" id="todayPredictionStats"><div class="loading"></div></div>
+    <div class="live-prediction-meta" id="todayMeta"></div>
+    <div style="margin-top:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
+        <div class="card-title" id="liveChartTitle" style="margin-bottom:0">Composite Score — 2026</div>
+        <div style="display:flex;gap:0.3rem;flex-wrap:wrap" id="liveMonthFilter">
+          <button class="month-btn all active" onclick="filterLiveMonth('all',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">All</button>
+          <button class="month-btn" onclick="filterLiveMonth('01',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Jan</button>
+          <button class="month-btn" onclick="filterLiveMonth('02',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Feb</button>
+          <button class="month-btn" onclick="filterLiveMonth('03',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Mar</button>
+          <button class="month-btn" onclick="filterLiveMonth('04',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Apr</button>
+          <button class="month-btn" onclick="filterLiveMonth('05',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">May</button>
+          <button class="month-btn" onclick="filterLiveMonth('06',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Jun</button>
+          <button class="month-btn" onclick="filterLiveMonth('07',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Jul</button>
+          <button class="month-btn" onclick="filterLiveMonth('08',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Aug</button>
+          <button class="month-btn" onclick="filterLiveMonth('09',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Sep</button>
+          <button class="month-btn" onclick="filterLiveMonth('10',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Oct</button>
+          <button class="month-btn" onclick="filterLiveMonth('11',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Nov</button>
+          <button class="month-btn" onclick="filterLiveMonth('12',this)" style="font-size:0.55rem;padding:0.2rem 0.5rem">Dec</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:160px"><canvas id="liveScoreChart"></canvas></div>
+    </div>
+  </div>
+  <div class="section-head" style="margin-top:1.5rem">
+    <h2>Live Prices</h2><span id="live-update-time"></span>
+    <button onclick="refreshLivePrices()" class="btn" style="padding:0.35rem 1rem;font-size:0.6rem;margin-left:auto">Refresh</button>
+  </div>
+  <div id="ticker-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-top:3px solid var(--ink)">
+    <div class="card" style="border:none;border-top:none"><div class="loading"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     CHATBOT — updated section
+     Changes vs original:
+       1. Quick suggestion chips above input
+       2. #forecast-strip appears below messages when API
+          returns predictions[] from the Gemini chat endpoint
+     Everything else (layout, fonts, colors) is identical.
+     ══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-chatbot">
+  <div style="max-width:780px;margin:0 auto">
+    <div class="section-head">
+      <h2>AI Assistant</h2>
+      <span id="chat-sub">market intelligence — 2026</span>
+    </div>
+
+    <!-- Quick suggestion chips (new) -->
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button class="chat-suggestion-btn" onclick="useSuggestion(this)">What's today's signal?</button>
+      <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Give me a 3-day forecast</button>
+      <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Is VIX elevated right now?</button>
+      <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Should I be cautious this week?</button>
+      <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Explain the current sentiment score</button>
+    </div>
+
+    <!-- Chat messages -->
+    <div id="chat-messages"
+         style="height:420px;overflow-y:auto;padding:1rem;
+                background:var(--paper);border:1px solid var(--rule);
+                border-top:3px solid var(--ink);margin-bottom:1rem">
+      <div class="chat-msg assistant">
+        <div class="chat-bubble" id="chatWelcome">
+          Ask me anything about your 2026 signals, VIX, or predictions.
+          Try <em>"Give me a 3-day forecast"</em> to see the day-by-day outlook.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-day forecast strip (hidden until AI returns predictions) -->
+    <div id="forecast-strip" style="display:none;margin-bottom:1rem"></div>
+
+    <!-- Input row -->
+    <div style="display:flex;gap:8px">
+      <input type="text" id="chat-input"
+             placeholder="Ask about signals, VIX, forecasts…"
+             style="flex:1;padding:0.65rem 1rem;border:1px solid var(--rule);
+                    background:var(--paper);color:var(--ink);
+                    font-family:var(--font-mono);font-size:0.75rem;outline:none"
+             onkeydown="if(event.key==='Enter') sendChat()">
+      <button onclick="sendChat()" class="btn">Send</button>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════
+// YEAR STATE — single source of truth
+// ══════════════════════════════════════════
+let ACTIVE_YEAR = '2026';
+
+function selectYear(year, btn) {
+  ACTIVE_YEAR = String(year);
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('yearBanner').textContent = `Viewing: ${ACTIVE_YEAR} Data`;
+  const labels = {
+    'ov-sub':          `${ACTIVE_YEAR} signal data`,
+    'sig-sub':         `${ACTIVE_YEAR} — all generated signals`,
+    'bt-sub':          `${ACTIVE_YEAR} strategy performance`,
+    'chat-sub':        `market intelligence — ${ACTIVE_YEAR}`,
+    'sigTableTitle':   `Signal Table — ${ACTIVE_YEAR}`,
+    'priceChartTitle': `SPY Price — ${ACTIVE_YEAR}`,
+    'scoreChartTitle': `Composite Score — ${ACTIVE_YEAR}`,
+    'sentChartTitle':  `Sentiment Trend — ${ACTIVE_YEAR}`,
+    'distChartTitle':  `Signal Distribution — ${ACTIVE_YEAR}`,
+    'equityChartTitle':`Equity Curve vs SPY — ${ACTIVE_YEAR}`,
+    'ddChartTitle':    `Drawdown (%) — ${ACTIVE_YEAR}`,
+    'liveChartTitle':  `Composite Score — ${ACTIVE_YEAR}`,
+    'chatWelcome':     `Ask me anything about your ${ACTIVE_YEAR} signals, VIX, or predictions.`
+  };
+  Object.entries(labels).forEach(([id, text]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  });
+  _activeSignalMonth = 'all';
+  _activeLiveMonth   = 'all';
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.month-btn.all').forEach(b => b.classList.add('active'));
+  const active = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (active === 'overview')  loadOverview();
+  if (active === 'signals')   loadSignals();
+  if (active === 'backtest')  loadBacktest();
+  if (active === 'live')      loadLivePage();
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function onlyYear(arr) {
+  return (arr || []).filter(item => String(item.date || '').startsWith(ACTIVE_YEAR));
+}
+function filterArraysByYear(dates, ...vals) {
+  const idx = [];
+  dates.forEach((d,i) => { if (String(d).startsWith(ACTIVE_YEAR)) idx.push(i); });
+  return { dates: idx.map(i=>dates[i]), values: vals.map(a=>idx.map(i=>a[i])) };
+}
+function filterByMonth(arr, month) {
+  if (month === 'all') return arr;
+  return arr.filter(item => String(item.date||'').startsWith(`${ACTIVE_YEAR}-${month}`));
+}
+function fmtDate(d)   { return d ? String(d).split('T')[0] : ''; }
+function fmt(v,dec)   { const n=parseFloat(v); return isNaN(n)?'—':n.toFixed(dec); }
+function pct(v)       { const n=parseFloat(v)*100; return (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function badge(s)     { return `<span class="signal-badge ${s}">${s.replace('_',' ')}</span>`; }
+async function api(u) { return (await fetch(u)).json(); }
+
+// ══════════════════════════════════════════
+// CHART SETUP
+// ══════════════════════════════════════════
+Chart.defaults.color       = '#8a7f75';
+Chart.defaults.borderColor = '#d4ccc0';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size   = 10;
+
+const charts = {};
+function mkChart(id, type, data, opts={}) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id);
+  if (!el) return;
+  charts[id] = new Chart(el, {type, data, options: opts});
+  return charts[id];
+}
+
+const C = { buy:'#27633a', sell:'#c0392b', hold:'#7a6520', risk:'#d4580a', amber:'#c8860a', ink:'#1a1410', muted:'#8a7f75' };
+const sigColor = { BUY:C.buy, SELL:C.sell, HOLD:C.hold, RISK_ALERT:C.risk };
+
+function timeXScale(unit='month') {
+  return {
+    type:'time',
+    time:{ unit, displayFormats:{ day:'d MMM', week:'MMM dd', month:'MMM yy' } },
+    ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:unit==='month'?12:10, color:'#8a7f75', font:{size:10} },
+    grid:{ display:false }
+  };
+}
+const commonOpts = (extra={}) => ({
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false} },
+  scales:{ x:timeXScale('month'), y:{ticks:{maxTicksLimit:5},grid:{color:'#e8e2d8'}} },
+  ...extra
+});
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='signals')  loadSignals();
+  if (name==='backtest') loadBacktest();
+  if (name==='stress')   loadStress();
+  if (name==='live')     loadLivePage();
+}
+
+// ══════════════════════════════════════════
+// WEBSOCKET
+// ══════════════════════════════════════════
+function initWS() {
+  try {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onopen    = ()=>{ document.getElementById('wsDot').classList.add('live'); document.getElementById('wsLabel').textContent='live'; };
+    ws.onmessage = e =>{ const m=JSON.parse(e.data); if(m.type==='signal'){document.getElementById('lastUpdated').textContent='updated '+new Date().toLocaleTimeString();loadOverview();} };
+    ws.onclose   = ()=>{ document.getElementById('wsDot').classList.remove('live'); document.getElementById('wsLabel').textContent='offline'; setTimeout(initWS,5000); };
+  } catch(e){console.warn('WS:',e);}
+}
+
+// ══════════════════════════════════════════
+// OVERVIEW
+// ══════════════════════════════════════════
+async function loadOverview() {
+  const [ov, prices, signals, sent] = await Promise.all([
+    api('/api/overview'), api('/api/prices'), api('/api/signals'), api('/api/sentiment')
+  ]);
+  if (ov.error) {
+    document.getElementById('overviewStats').innerHTML=`<div class="error-msg" style="grid-column:1/-1">${ov.error} — run the pipeline first.</div>`;
+    return;
+  }
+  const yearSigs  = onlyYear(signals.signals||[]);
+  const latestY   = yearSigs.length ? yearSigs[yearSigs.length-1] : null;
+  const yearCnts  = {};
+  yearSigs.forEach(s=>{ yearCnts[s.signal]=(yearCnts[s.signal]||0)+1; });
+  const refVix     = latestY ? parseFloat(latestY.vix||ov.vix)        : parseFloat(ov.vix);
+  const refSentMA  = latestY ? parseFloat(latestY.sentiment_score||ov.sentiment_3d_ma) : parseFloat(ov.sentiment_3d_ma);
+  const refBullish = latestY ? parseFloat(latestY.bullish_ratio||ov.bullish_ratio)     : parseFloat(ov.bullish_ratio);
+  const vixColor  = refVix>30?C.sell:refVix>22?C.risk:C.ink;
+  const vixLabel  = refVix>30?'⚠ elevated':refVix>20?'moderate':'normal';
+  const sentYear = (sent.dates||[]).reduce((acc,d,i)=>{
+    if(String(d).startsWith(ACTIVE_YEAR)) acc.push({date:d, val:sent.sentiment[i], bull:sent.bullish[i]});
+    return acc;
+  },[]);
+  const latestSent   = sentYear.length ? sentYear[sentYear.length-1] : null;
+  const displaySentMA= latestSent ? latestSent.val : refSentMA;
+  const displayBull  = latestSent ? latestSent.bull : refBullish;
+  const sentColorFinal = displaySentMA>=0?C.buy:C.sell;
+  document.getElementById('overviewStats').innerHTML=`
+    <div class="card">
+      <div class="stat-label">Latest Signal (${ACTIVE_YEAR})</div>
+      <div style="margin:0.4rem 0 0.3rem">${badge(latestY?latestY.signal:ov.latest_signal)}</div>
+      <div class="stat-sub">score: ${fmt(latestY?latestY.composite_score:ov.composite_score,4)}</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">VIX (${ACTIVE_YEAR} latest)</div>
+      <div class="stat-value" style="color:${vixColor}">${fmt(refVix,2)}</div>
+      <div class="stat-sub">${vixLabel}</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Sentiment 3d MA</div>
+      <div class="stat-value" style="color:${sentColorFinal};font-size:1.6rem">${fmt(displaySentMA,3)}</div>
+      <div class="stat-sub">bullish: ${fmt(displayBull*100,1)}%</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Signal Days</div>
+      <div class="stat-value">${yearSigs.length}</div>
+      <div class="stat-sub">in ${ACTIVE_YEAR}</div>
+    </div>`;
+
+  if (prices.dates?.length) {
+    const f=filterArraysByYear(prices.dates.map(fmtDate),prices.prices);
+    if (f.dates.length) mkChart('priceChart','line',{
+      labels:f.dates,
+      datasets:[{data:f.values[0],borderColor:C.ink,borderWidth:1.5,pointRadius:0,tension:0.3,fill:true,
+        backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,220);g.addColorStop(0,'rgba(26,20,16,0.12)');g.addColorStop(1,'rgba(26,20,16,0)');return g;}}]
+    },commonOpts());
+  }
+  if (yearSigs.length) {
+    mkChart('scoreChart','bar',{
+      labels:yearSigs.map(s=>fmtDate(s.date)),
+      datasets:[{data:yearSigs.map(s=>parseFloat(s.composite_score)),
+        backgroundColor:yearSigs.map(s=>s.signal==='BUY'?'rgba(39,99,58,0.65)':s.signal==='SELL'?'rgba(192,57,43,0.65)':s.signal==='RISK_ALERT'?'rgba(212,88,10,0.65)':'rgba(122,101,32,0.35)'),
+        borderWidth:0}]
+    },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:timeXScale('month'),y:{min:-1,max:1,ticks:{maxTicksLimit:5},grid:{color:'#e8e2d8'}}}});
+    if (Object.keys(yearCnts).length) mkChart('distChart','doughnut',{
+      labels:Object.keys(yearCnts),
+      datasets:[{data:Object.values(yearCnts),backgroundColor:Object.keys(yearCnts).map(k=>sigColor[k]||C.muted),borderColor:['#faf7f2'],borderWidth:2,hoverOffset:4}]
+    },{responsive:true,maintainAspectRatio:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10}}}});
+  }
+  if (sent.dates?.length) {
+    const f=filterArraysByYear(sent.dates.map(fmtDate),sent.sentiment,sent.bullish);
+    if (f.dates.length) mkChart('sentChart','line',{
+      labels:f.dates,
+      datasets:[
+        {label:'Sentiment',data:f.values[0],borderColor:C.ink,borderWidth:1.5,pointRadius:0,tension:0.4,fill:false},
+        {label:'Bullish',data:f.values[1],borderColor:C.buy,borderWidth:1,pointRadius:0,tension:0.4,fill:false,borderDash:[3,3]}
+      ]
+    },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},
+      scales:{x:timeXScale('month'),y:{ticks:{maxTicksLimit:5},grid:{color:'#e8e2d8'}}}});
+  }
+}
+
+// ══════════════════════════════════════════
+// SIGNALS
+// ══════════════════════════════════════════
+let _allSignalsYear    = [];
+let _activeSignalMonth = 'all';
+
+async function loadSignals() {
+  const data = await api('/api/signals');
+  _allSignalsYear    = onlyYear(data.signals||[]);
+  _activeSignalMonth = 'all';
+  document.querySelectorAll('#signalMonthFilter .month-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#signalMonthFilter .month-btn.all').classList.add('active');
+  if (!_allSignalsYear.length) {
+    document.getElementById('signalTableWrap').innerHTML=`<div class="error-msg">No ${ACTIVE_YEAR} signal data.</div>`;
+    return;
+  }
+  renderSignals(_allSignalsYear);
+}
+
+function filterSignalMonth(month,btn) {
+  _activeSignalMonth=month;
+  document.querySelectorAll('#signalMonthFilter .month-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSignals(filterByMonth(_allSignalsYear,month));
+}
+
+function renderSignals(sigs) {
+  if (!sigs.length) {
+    document.getElementById('signalTableWrap').innerHTML='<div class="error-msg">No data for selected period.</div>';
+    mkChart('signalHistChart','line',{labels:[],datasets:[]},{});
+    return;
+  }
+  mkChart('signalHistChart','line',{
+    labels:sigs.map(s=>fmtDate(s.date)),
+    datasets:[
+      {label:'Composite Score',data:sigs.map(s=>parseFloat(s.composite_score)),borderColor:C.ink,borderWidth:1.5,
+       pointRadius:sigs.map(s=>s.signal!=='HOLD'?4:0),pointBackgroundColor:sigs.map(s=>sigColor[s.signal]||C.muted),tension:0.3,fill:false}
+    ]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:timeXScale(_activeSignalMonth==='all'?'month':'day'),y:{min:-1,max:1,ticks:{maxTicksLimit:5},grid:{color:'#e8e2d8'}}}});
+
+  document.getElementById('signalTableWrap').innerHTML=`
+    <div style="overflow:auto;max-height:420px">
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Signal</th><th>Composite Score</th><th>Confidence</th><th>Rationale</th></tr></thead>
+        <tbody>${sigs.slice().reverse().map(s=>{
+          const score = parseFloat(s.composite_score);
+          const conf  = s.confidence ?? s.conf ?? null;
+          const rat   = s.rationale  ?? s.reason ?? s.notes ?? '';
+          return `<tr>
+            <td>${fmtDate(s.date)}</td>
+            <td>${badge(s.signal)}</td>
+            <td style="color:${score>=0?C.buy:C.sell};font-weight:700">${fmt(score,4)}</td>
+            <td style="color:${C.muted}">${conf!==null?fmt(conf,4):'—'}</td>
+            <td style="color:${C.muted};font-size:0.65rem;max-width:320px;white-space:normal;line-height:1.4">${rat||'—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// BACKTEST
+// ══════════════════════════════════════════
+async function loadBacktest() {
+  const data=await api('/api/backtest');
+  if (data.error){document.getElementById('backtestStats').innerHTML=`<div class="error-msg" style="grid-column:1/-1">${data.error}</div>`;return;}
+  const m=data.metrics;
+  document.getElementById('backtestStats').innerHTML=`
+    <div class="card"><div class="stat-label">Total Return</div>
+      <div class="stat-value" style="font-size:1.5rem;color:${parseFloat(m.total_return)>=0?C.buy:C.sell}">${pct(m.total_return)}</div>
+      <div class="stat-sub">strategy ${ACTIVE_YEAR}</div></div>
+    <div class="card"><div class="stat-label">Benchmark</div>
+      <div class="stat-value" style="font-size:1.5rem;color:${parseFloat(m.benchmark_return)>=0?C.buy:C.sell}">${pct(m.benchmark_return)}</div>
+      <div class="stat-sub">SPY buy &amp; hold</div></div>
+    <div class="card"><div class="stat-label">Sharpe Ratio</div>
+      <div class="stat-value" style="font-size:1.5rem;color:${m.sharpe_ratio>1?C.buy:m.sharpe_ratio>0?C.hold:C.sell}">${fmt(m.sharpe_ratio,2)}</div>
+      <div class="stat-sub">annualised</div></div>
+    <div class="card"><div class="stat-label">Max Drawdown</div>
+      <div class="stat-value" style="font-size:1.5rem;color:${C.sell}">${pct(m.max_drawdown)}</div>
+      <div class="stat-sub">peak to trough</div></div>`;
+
+  const eq=data.equity_curve;
+  const ef=filterArraysByYear(eq.dates.map(fmtDate),eq.equity,eq.benchmark);
+  if (ef.dates.length) mkChart('equityChart','line',{
+    labels:ef.dates,
+    datasets:[
+      {label:'Strategy',data:ef.values[0],borderColor:C.ink,borderWidth:2,pointRadius:0,tension:0.2,fill:true,
+       backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(26,20,16,0.1)');g.addColorStop(1,'rgba(26,20,16,0)');return g;}},
+      {label:'SPY',data:ef.values[1],borderColor:C.risk,borderWidth:1.5,pointRadius:0,tension:0.2,fill:false,borderDash:[4,4]}
+    ]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},
+    scales:{x:timeXScale('month'),y:{ticks:{maxTicksLimit:5},grid:{color:'#e8e2d8'}}}});
+
+  const dd=data.drawdown;
+  const df=filterArraysByYear(dd.dates.map(fmtDate),dd.values);
+  if (df.dates.length) mkChart('drawdownChart','line',{
+    labels:df.dates,
+    datasets:[{data:df.values[0],borderColor:C.sell,borderWidth:1.5,pointRadius:0,tension:0.2,fill:true,backgroundColor:'rgba(192,57,43,0.07)'}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:timeXScale('month'),y:{ticks:{maxTicksLimit:4,callback:v=>v+'%'},grid:{color:'#e8e2d8'}}}});
+}
+
+// ══════════════════════════════════════════
+// STRESS — unchanged, no year filter
+// ══════════════════════════════════════════
+async function loadStress() {
+  const data=await api('/api/stress');
+  const events=data.events||[];
+  if (!events.length){document.getElementById('stressGrid').innerHTML='<div class="error-msg">No stress data. Run stress/run_stress.py first.</div>';return;}
+  document.getElementById('stressGrid').innerHTML=events.map(e=>{
+    const acc=(e.signal_accuracy*100).toFixed(0),far=(e.false_alarm_rate*100).toFixed(0);
+    const dd=(Math.abs(e.max_drawdown)*100).toFixed(1),mr=(e.market_return*100).toFixed(1);
+    const cls=e.signal_accuracy>=0.7?'good':e.signal_accuracy>=0.4?'warn':e.lead_time_days===0?'bad':'alert';
+    const accC=e.signal_accuracy>=0.7?C.buy:e.signal_accuracy>=0.4?C.hold:C.sell;
+    return `<div class="stress-card ${cls}">
+      <div class="stress-name">${e.event_name.replace(/_/g,' ')}</div>
+      <div class="stress-period">${fmtDate(e.start)} → ${fmtDate(e.end)}</div>
+      <div class="stress-metrics">
+        <div class="sm-item"><div class="sm-val" style="color:${accC}">${acc}%</div><div class="sm-lbl">Accuracy</div></div>
+        <div class="sm-item"><div class="sm-val" style="color:${C.sell}">${far}%</div><div class="sm-lbl">False Alarms</div></div>
+        <div class="sm-item"><div class="sm-val" style="color:${C.sell}">-${dd}%</div><div class="sm-lbl">Max DD</div></div>
+        <div class="sm-item"><div class="sm-val" style="color:${parseFloat(mr)>=0?C.buy:C.sell}">${parseFloat(mr)>=0?'+':''}${mr}%</div><div class="sm-lbl">Mkt Return</div></div>
+        <div class="sm-item"><div class="sm-val" style="color:${C.amber}">${e.lead_time_days}d</div><div class="sm-lbl">Lead Time</div></div>
+      </div>
+      <div class="stress-note">${e.first_alert_date!=='No alert fired'?'First alert: '+fmtDate(e.first_alert_date):'⚠ No alert fired'} · ${e.notes}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// SIMULATE
+// ══════════════════════════════════════════
+async function runSimulate() {
+  const btn=document.getElementById('simBtn');
+  btn.disabled=true;btn.textContent='… Running';
+  try {
+    const body={
+      vix:parseFloat(document.getElementById('sim-vix').value),
+      prob_up:parseFloat(document.getElementById('sim-prob').value),
+      sentiment:parseFloat(document.getElementById('sim-sent').value),
+      sentiment_trend:parseFloat(document.getElementById('sim-strend').value),
+      yield_curve:parseFloat(document.getElementById('sim-yc').value),
+      bullish_ratio:parseFloat(document.getElementById('sim-br').value),
+      vol_10d:0.15,vol_mean:0.15
+    };
+    const r=await fetch('/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const t=await r.text();throw new Error(`Server ${r.status}: ${t}`);}
+    const d=await r.json();
+    document.getElementById('simResult').style.display='block';
+    document.getElementById('simSignalBadge').innerHTML=badge(d.signal);
+    const sc=parseFloat(d.composite_score);
+    document.getElementById('simScore').textContent=fmt(d.composite_score,4);
+    document.getElementById('simScore').style.color=sc>=0?C.buy:C.sell;
+    document.getElementById('simStrength').textContent=d.strength;
+    document.getElementById('simConf').textContent=fmt(d.confidence,4);
+    const bars=[{label:'LSTM Score',val:d.lstm_score},{label:'Sentiment Score',val:d.sentiment_score},{label:'Volatility Score',val:d.volatility_score},{label:'Composite Score',val:d.composite_score}];
+    document.getElementById('simBars').innerHTML=bars.map(b=>{
+      const v=parseFloat(b.val),color=v>=0?C.buy:C.sell,width=Math.abs(v)*50,left=v>=0?'50%':`${50-width}%`;
+      return `<div class="score-bar-wrap"><div class="score-bar-label"><span>${b.label}</span><span style="color:${color};font-weight:700">${fmt(b.val,4)}</span></div>
+        <div class="score-bar-track"><div class="score-bar-mid"></div><div class="score-bar-fill" style="left:${left};width:${width}%;background:${color};opacity:0.75"></div></div></div>`;
+    }).join('');
+    document.getElementById('simRationale').innerHTML=(d.rationale||[]).map(r=>`<li>${r}</li>`).join('');
+  }catch(err){alert('Simulation failed: '+err.message);console.error(err);}
+  finally{btn.disabled=false;btn.textContent='▶ Run Scenario';}
+}
+
+// ══════════════════════════════════════════
+// LIVE PAGE
+// ══════════════════════════════════════════
+let _allLiveSignalsYear = [];
+let _activeLiveMonth    = 'all';
+
+async function loadLivePage() {
+  const data = await api('/api/signals');
+  const allSigs = data.signals || [];
+  const todayLatest = allSigs.length ? allSigs[allSigs.length-1] : null;
+  if (!todayLatest) {
+    document.getElementById('todayPredictionStats').innerHTML='<div class="error-msg">No signal data available.</div>';
+  } else {
+    const score   = parseFloat(todayLatest.composite_score);
+    const conf    = parseFloat(todayLatest.confidence ?? Math.abs(score));
+    const direction = score>0.05?'▲ Bullish':score<-0.05?'▼ Bearish':'→ Neutral';
+    const dirColor  = score>0.05?C.buy:score<-0.05?C.sell:C.muted;
+    const prev2    = allSigs.length>=2 ? parseFloat(allSigs[allSigs.length-2].composite_score) : score;
+    const momentum = score - prev2;
+    const tomorrowScore = +(score + momentum*0.5).toFixed(4);
+    const tomorrowSig   = tomorrowScore>0.1?'BUY':tomorrowScore<-0.1?'SELL':'HOLD';
+    const tomorrowDir   = tomorrowScore>0.05?'▲ Likely Up':tomorrowScore<-0.05?'▼ Likely Down':'→ Sideways';
+    const tomorrowColor = tomorrowScore>0.05?C.buy:tomorrowScore<-0.05?C.sell:C.muted;
+    document.getElementById('todayPredictionStats').innerHTML=`
+      <div style="border-right:1px solid var(--rule);padding-right:1.5rem;margin-right:0.5rem">
+        <div style="font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:0.5rem">Today — ${fmtDate(todayLatest.date)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:1.5rem">
+          <div><div class="stat-label">Signal</div><div style="margin-top:0.3rem">${badge(todayLatest.signal)}</div></div>
+          <div><div class="stat-label">Direction</div><div class="stat-value" style="font-size:1.4rem;color:${dirColor}">${direction}</div></div>
+          <div><div class="stat-label">Composite Score</div><div class="stat-value" style="font-size:1.4rem;color:${score>=0?C.buy:C.sell}">${fmt(score,4)}</div></div>
+          <div><div class="stat-label">Confidence</div><div class="stat-value" style="font-size:1.4rem">${fmt(conf,4)}</div></div>
+        </div>
+      </div>
+      <div style="padding-left:0.5rem">
+        <div style="font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:0.5rem">Tomorrow's Prediction</div>
+        <div style="display:flex;flex-wrap:wrap;gap:1.5rem">
+          <div><div class="stat-label">Expected Signal</div><div style="margin-top:0.3rem">${badge(tomorrowSig)}</div></div>
+          <div><div class="stat-label">Direction</div><div class="stat-value" style="font-size:1.4rem;color:${tomorrowColor}">${tomorrowDir}</div></div>
+          <div><div class="stat-label">Projected Score</div><div class="stat-value" style="font-size:1.4rem;color:${tomorrowColor}">${fmt(tomorrowScore,4)}</div></div>
+          <div><div class="stat-label">Momentum</div><div class="stat-value" style="font-size:1.4rem;color:${momentum>=0?C.buy:C.sell}">${momentum>=0?'+':''}${fmt(momentum,4)}</div></div>
+        </div>
+      </div>`;
+    const rat = todayLatest.rationale ?? todayLatest.reason ?? '';
+    document.getElementById('todayMeta').innerHTML=`
+      <span>As of: <strong>${fmtDate(todayLatest.date)}</strong></span>
+      <span>Confidence: <strong>${fmt(todayLatest.confidence,4)}</strong></span>
+      ${rat ? `<span>Rationale: <strong style="font-style:italic">${rat}</strong></span>` : ''}
+      <span style="color:var(--muted);font-style:italic;font-size:0.62rem">Chart below shows ${ACTIVE_YEAR} history</span>`;
+  }
+  _allLiveSignalsYear = onlyYear(allSigs);
+  _activeLiveMonth = 'all';
+  document.querySelectorAll('#liveMonthFilter .month-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#liveMonthFilter .month-btn.all').classList.add('active');
+  renderLiveChart(_allLiveSignalsYear);
+  refreshLivePrices();
+}
+
+function filterLiveMonth(month,btn) {
+  _activeLiveMonth=month;
+  document.querySelectorAll('#liveMonthFilter .month-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLiveChart(filterByMonth(_allLiveSignalsYear,month));
+}
+
+function renderLiveChart(sigs) {
+  if (!sigs.length) return;
+  mkChart('liveScoreChart','bar',{
+    labels:sigs.map(s=>fmtDate(s.date)),
+    datasets:[{data:sigs.map(s=>parseFloat(s.composite_score)),
+      backgroundColor:sigs.map(s=>s.signal==='BUY'?'rgba(39,99,58,0.75)':s.signal==='SELL'?'rgba(192,57,43,0.75)':s.signal==='RISK_ALERT'?'rgba(212,88,10,0.75)':'rgba(122,101,32,0.4)'),
+      borderWidth:0}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:timeXScale(_activeLiveMonth==='all'?'month':'day'),y:{min:-1,max:1,ticks:{maxTicksLimit:4},grid:{color:'#e8e2d8'}}}});
+}
+
+async function refreshLivePrices() {
+  try {
+    const data=await fetch('/api/live_prices').then(r=>r.json());
+    document.getElementById('ticker-grid').innerHTML=data.map(t=>`
+      <div class="card" style="border:none;border-top:none;border-right:1px solid var(--rule)">
+        <div class="stat-label">${t.symbol}</div>
+        <div class="stat-value" style="font-size:1.5rem">${fmt(t.price,2)}</div>
+        <div class="stat-sub" style="color:${t.change>=0?C.buy:C.sell}">${t.change>=0?'▲':'▼'} ${Math.abs(t.change).toFixed(2)}%</div>
+      </div>`).join('');
+    document.getElementById('live-update-time').textContent='Updated '+new Date().toLocaleTimeString();
+  }catch(e){console.error('Live prices error:',e);}
+}
+
+// ══════════════════════════════════════════
+// CHATBOT — updated to handle predictions[]
+// ══════════════════════════════════════════
+
+/* Click a suggestion chip → fill input → send */
+function useSuggestion(btn) {
+  document.getElementById('chat-input').value = btn.textContent.trim();
+  sendChat();
+}
+
+function addMessage(role, text) {
+  const c = document.getElementById('chat-messages');
+  const d = document.createElement('div');
+  d.className = 'chat-msg ' + role;
+  d.innerHTML = `<div class="chat-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function addTyping() {
+  const c = document.getElementById('chat-messages');
+  const d = document.createElement('div');
+  d.className = 'chat-msg assistant';
+  d.id = 'typing-indicator';
+  d.innerHTML = `<div class="chat-bubble" style="color:var(--muted)">Typing…</div>`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+/*
+ * renderForecastStrip — renders the 3-day prediction cards
+ * that come from the updated /api/chat endpoint.
+ * Each prediction object: { day, score, signal, probability }
+ */
+function renderForecastStrip(predictions) {
+  const strip = document.getElementById('forecast-strip');
+  if (!predictions || !predictions.length) {
+    strip.style.display = 'none';
+    return;
+  }
+
+  const sigColors = { BUY: C.buy, SELL: C.sell, HOLD: C.hold, RISK_ALERT: C.risk };
+
+  strip.innerHTML = `
+    <div style="font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;
+                color:var(--muted);font-weight:700;padding:0.5rem 0 0.4rem;
+                border-bottom:1px solid var(--rule);margin-bottom:0">
+      3-day AI forecast
+    </div>
+    <div class="forecast-strip">
+      ${predictions.map(p => {
+        const sig   = p.signal || 'HOLD';
+        const score = parseFloat(p.score || 0);
+        const prob  = parseFloat(p.probability || 0.5);
+        const color = sigColors[sig] || C.muted;
+        /* probability bar: 0→50% fills left half, 1→100% fills right */
+        const barW  = Math.round(Math.abs(prob - 0.5) * 200);  /* 0–100 */
+        const barL  = prob >= 0.5 ? 50 : (50 - barW);
+        const barC  = prob >= 0.5 ? C.buy : C.sell;
+        return `
+          <div class="forecast-day ${sig}">
+            <div class="forecast-day-label">${p.day || '—'}</div>
+            <div class="forecast-signal-text ${sig}">${sig.replace('_',' ')}</div>
+            <div class="forecast-score">Score: ${score >= 0 ? '+' : ''}${score.toFixed(3)}</div>
+            <div class="forecast-prob" style="color:${color}">
+              ${(prob * 100).toFixed(0)}% probability
+            </div>
+            <div class="forecast-bar-track">
+              <div class="forecast-bar-fill"
+                   style="left:${barL}%;width:${barW}%;background:${barC};opacity:0.7">
+              </div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  strip.style.display = 'block';
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  addMessage('user', msg);
+  addTyping();
+
+  /* hide old forecast while waiting */
+  document.getElementById('forecast-strip').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ message: msg })
+    }).then(r => r.json());
+
+    document.getElementById('typing-indicator')?.remove();
+
+    if (res.error) {
+      addMessage('assistant', `Error: ${res.error}`);
+    } else {
+      /* show Gemini text response */
+      addMessage('assistant', res.response || 'No response received.');
+
+      /* if the API returned predictions, render the forecast strip */
+      if (res.predictions && res.predictions.length) {
+        renderForecastStrip(res.predictions);
+      }
+    }
+  } catch (e) {
+    document.getElementById('typing-indicator')?.remove();
+    addMessage('assistant', `Connection error: ${e.message}`);
+  }
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadOverview();
+initWS();
+</script>
+</body>
+</html>

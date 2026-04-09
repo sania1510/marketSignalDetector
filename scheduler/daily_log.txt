@@ -1,0 +1,501 @@
+2026-04-05 12:08:11,914 [INFO] Scheduler started. Daily update runs at 06:30 on weekdays.
+2026-04-05 12:08:11,915 [INFO] Press Ctrl+C to stop.
+2026-04-05 12:08:11,915 [INFO] Running initial update on startup...
+2026-04-05 12:08:11,915 [INFO] Scheduled daily update triggered
+2026-04-05 12:08:11,915 [INFO] ============================================================
+2026-04-05 12:08:11,915 [INFO] DAILY UPDATE STARTED - 2026-04-05 12:08
+2026-04-05 12:08:11,915 [INFO] ============================================================
+2026-04-05 12:08:11,916 [INFO] --- Fetch new prices ---
+2026-04-05 12:08:15,668 [ERROR]     FAILED: Cannot save file into a non-existent directory: 'data\raw\prices'
+2026-04-05 12:08:15,669 [INFO] --- Fetch new macro ---
+2026-04-05 12:08:16,233 [WARNING] Macro update failed: Cannot save file into a non-existent directory: 'data\raw\macro'
+2026-04-05 12:08:16,233 [INFO]     OK
+2026-04-05 12:08:16,234 [INFO] --- Rebuild master.csv ---
+2026-04-05 12:08:21,478 [INFO] master.csv: (1509, 12)
+2026-04-05 12:08:21,478 [INFO]     OK
+2026-04-05 12:08:21,478 [INFO] --- Update sentiment ---
+2026-04-05 12:08:21,478 [INFO] Sentiment updated (placeholder)
+2026-04-05 12:08:21,478 [INFO]     OK
+2026-04-05 12:08:21,479 [INFO] --- Retrain LSTM ---
+2026-04-05 12:08:23,598 [ERROR]     FAILED: target_3d missing � check technical.py
+2026-04-05 12:08:23,600 [INFO] --- Generate signals ---
+2026-04-05 12:08:23,606 [ERROR]     FAILED: "None of [Index(['prob_up'], dtype='object')] are in the [columns]"
+2026-04-05 12:08:23,606 [INFO] --- Generate today prediction ---
+2026-04-05 12:08:23,607 [INFO] Today prediction generated
+2026-04-05 12:08:23,607 [INFO]     OK
+2026-04-05 12:08:23,607 [INFO] --- Update stress ---
+2026-04-05 12:08:23,607 [INFO] Stress test updated
+2026-04-05 12:08:23,607 [INFO]     OK
+2026-04-05 12:08:23,607 [INFO] ============================================================
+2026-04-05 12:08:23,607 [INFO] UPDATE COMPLETE WITH ERRORS
+2026-04-05 12:08:23,608 [INFO] ============================================================
+2026-04-05 12:11:58,116 [INFO] Scheduler started. Daily update runs at 06:30 on weekdays.
+2026-04-05 12:11:58,117 [INFO] Press Ctrl+C to stop.
+2026-04-05 12:11:58,117 [INFO] Running initial update on startup...
+2026-04-05 12:11:58,118 [INFO] Scheduled daily update triggered
+2026-04-05 12:11:58,118 [INFO] ============================================================
+2026-04-05 12:11:58,118 [INFO] DAILY UPDATE STARTED - 2026-04-05 12:11
+2026-04-05 12:11:58,118 [INFO] ============================================================
+2026-04-05 12:11:58,118 [INFO] --- Fetch new prices ---
+2026-04-05 12:12:00,339 [INFO] SPY: updated
+2026-04-05 12:12:01,492 [INFO] QQQ: updated
+2026-04-05 12:12:02,678 [INFO] AAPL: updated
+2026-04-05 12:12:03,872 [INFO] MSFT: updated
+2026-04-05 12:12:05,048 [INFO] TSLA: updated
+2026-04-05 12:12:06,171 [INFO] GLD: updated
+2026-04-05 12:12:07,328 [INFO] TLT: updated
+2026-04-05 12:12:07,329 [INFO]     OK
+2026-04-05 12:12:07,330 [INFO] --- Fetch new macro ---
+2026-04-05 12:12:07,946 [INFO] VIX: updated
+2026-04-05 12:12:08,393 [INFO] FedFunds: updated
+2026-04-05 12:12:08,906 [INFO] CPI: updated
+2026-04-05 12:12:09,412 [INFO] Unemployment: updated
+2026-04-05 12:12:09,999 [INFO] YieldCurve: updated
+2026-04-05 12:12:09,999 [INFO]     OK
+2026-04-05 12:12:10,001 [INFO] --- Rebuild master.csv ---
+2026-04-05 12:12:10,448 [INFO] master.csv: (2074, 12)
+2026-04-05 12:12:10,449 [INFO]     OK
+2026-04-05 12:12:10,449 [INFO] --- Update sentiment ---
+2026-04-05 12:12:10,449 [INFO] Sentiment updated (placeholder)
+2026-04-05 12:12:10,449 [INFO]     OK
+2026-04-05 12:12:10,450 [INFO] --- Retrain LSTM ---
+2026-04-05 12:12:12,132 [ERROR] LSTM failed: [Errno 2] No such file or directory: 'data/processed/sentiment_daily.csv'
+2026-04-05 12:12:12,132 [INFO]     OK
+2026-04-05 12:12:12,133 [INFO] --- Generate signals ---
+2026-04-05 12:12:12,139 [ERROR]     FAILED: [Errno 2] No such file or directory: 'data/processed/sentiment_daily.csv'
+2026-04-05 12:12:12,139 [INFO] --- Generate today prediction ---
+2026-04-05 12:12:12,139 [INFO] Today prediction generated
+2026-04-05 12:12:12,139 [INFO]     OK
+2026-04-05 12:12:12,139 [INFO] --- Update stress ---
+2026-04-05 12:12:12,139 [INFO] Stress test updated
+2026-04-05 12:12:12,139 [INFO]     OK
+2026-04-05 12:12:12,140 [INFO] ============================================================
+2026-04-05 12:12:12,144 [INFO] ============================================================
+2026-04-05 12:18:53,903 [INFO] Scheduler started. Daily update runs at 06:30 on weekdays.
+2026-04-05 12:18:53,903 [INFO] Press Ctrl+C to stop.
+2026-04-05 12:18:53,904 [INFO] Running initial update on startup...
+2026-04-05 12:18:53,904 [INFO] Scheduled daily update triggered
+2026-04-05 12:18:53,904 [INFO] ============================================================
+2026-04-05 12:18:53,904 [INFO] DAILY UPDATE STARTED - 2026-04-05 12:18
+2026-04-05 12:18:53,905 [INFO] ============================================================
+2026-04-05 12:18:53,905 [INFO] --- Fetch new prices ---
+2026-04-05 12:18:54,840 [INFO] SPY: updated
+2026-04-05 12:18:55,144 [INFO] QQQ: updated
+2026-04-05 12:18:55,450 [INFO] AAPL: updated
+2026-04-05 12:18:55,685 [INFO] MSFT: updated
+2026-04-05 12:18:55,960 [INFO] TSLA: updated
+2026-04-05 12:18:56,283 [INFO] GLD: updated
+2026-04-05 12:18:56,581 [INFO] TLT: updated
+2026-04-05 12:18:56,582 [INFO]     OK
+2026-04-05 12:18:56,582 [INFO] --- Fetch new macro ---
+2026-04-05 12:18:57,233 [INFO] VIX: updated
+2026-04-05 12:18:57,786 [INFO] FedFunds: updated
+2026-04-05 12:18:58,201 [INFO] CPI: updated
+2026-04-05 12:18:58,630 [INFO] Unemployment: updated
+2026-04-05 12:18:59,174 [INFO] YieldCurve: updated
+2026-04-05 12:18:59,174 [INFO]     OK
+2026-04-05 12:18:59,175 [INFO] --- Rebuild master.csv ---
+2026-04-05 12:18:59,438 [INFO] master.csv: (2074, 12)
+2026-04-05 12:18:59,438 [INFO]     OK
+2026-04-05 12:18:59,439 [INFO] --- Update sentiment ---
+2026-04-05 12:18:59,498 [INFO] Sentiment updated: 2074 new rows
+2026-04-05 12:18:59,498 [INFO]     OK
+2026-04-05 12:18:59,500 [INFO] --- Retrain LSTM ---
+2026-04-05 12:19:05,202 [INFO] LSTM retrained
+2026-04-05 12:19:05,203 [INFO]     OK
+2026-04-05 12:19:05,203 [INFO] --- Generate signals ---
+2026-04-05 12:19:05,213 [WARNING] No predictions → using neutral 0.5
+2026-04-05 12:19:05,397 [INFO] Signals generated
+2026-04-05 12:19:05,397 [INFO]     OK
+2026-04-05 12:19:05,397 [INFO] --- Generate today prediction ---
+2026-04-05 12:19:05,397 [INFO] Today prediction generated
+2026-04-05 12:19:05,397 [INFO]     OK
+2026-04-05 12:19:05,397 [INFO] --- Update stress ---
+2026-04-05 12:19:05,397 [INFO] Stress test updated
+2026-04-05 12:19:05,397 [INFO]     OK
+2026-04-05 12:19:05,397 [INFO] ============================================================
+2026-04-05 12:19:05,397 [INFO] DAILY UPDATE COMPLETE - all steps passed
+2026-04-05 12:19:05,397 [INFO] ============================================================
+2026-04-06 11:37:57,373 [INFO] Scheduled daily update triggered
+2026-04-06 11:37:57,384 [INFO] ============================================================
+2026-04-06 11:37:57,384 [INFO] DAILY UPDATE STARTED - 2026-04-06 11:37
+2026-04-06 11:37:57,384 [INFO] ============================================================
+2026-04-06 11:37:57,386 [INFO] --- Fetch new prices ---
+2026-04-06 11:37:57,919 [INFO] SPY: updated
+2026-04-06 11:37:58,176 [INFO] QQQ: updated
+2026-04-06 11:37:58,451 [INFO] AAPL: updated
+2026-04-06 11:37:59,046 [INFO] MSFT: updated
+2026-04-06 11:37:59,324 [INFO] TSLA: updated
+2026-04-06 11:37:59,523 [INFO] GLD: updated
+2026-04-06 11:37:59,789 [INFO] TLT: updated
+2026-04-06 11:37:59,790 [INFO]     OK
+2026-04-06 11:37:59,791 [INFO] --- Fetch new macro ---
+2026-04-06 11:38:01,069 [INFO] VIX: updated
+2026-04-06 11:38:01,474 [INFO] FedFunds: updated
+2026-04-06 11:38:03,330 [INFO] CPI: updated
+2026-04-06 11:38:05,346 [INFO] Unemployment: updated
+2026-04-06 11:38:06,016 [INFO] YieldCurve: updated
+2026-04-06 11:38:06,017 [INFO]     OK
+2026-04-06 11:38:06,017 [INFO] --- Rebuild master.csv ---
+2026-04-06 11:38:06,388 [INFO] master.csv: (2074, 12)
+2026-04-06 11:38:06,389 [INFO]     OK
+2026-04-06 11:38:06,389 [INFO] --- Update sentiment ---
+2026-04-06 11:38:06,421 [INFO] Sentiment already up to date
+2026-04-06 11:38:06,424 [INFO]     OK
+2026-04-06 11:38:06,424 [INFO] --- Retrain LSTM ---
+2026-04-06 11:38:13,548 [INFO] LSTM retrained
+2026-04-06 11:38:13,549 [INFO]     OK
+2026-04-06 11:38:13,549 [INFO] --- Generate signals ---
+2026-04-06 11:38:13,561 [WARNING] No predictions → using neutral 0.5
+2026-04-06 11:38:13,977 [INFO] Signals generated
+2026-04-06 11:38:13,978 [INFO]     OK
+2026-04-06 11:38:13,978 [INFO] --- Generate today prediction ---
+2026-04-06 11:38:13,979 [INFO] Today prediction generated
+2026-04-06 11:38:13,979 [INFO]     OK
+2026-04-06 11:38:13,980 [INFO] --- Update stress ---
+2026-04-06 11:38:13,980 [INFO] Stress test updated
+2026-04-06 11:38:13,980 [INFO]     OK
+2026-04-06 11:38:13,981 [INFO] ============================================================
+2026-04-06 11:38:13,981 [INFO] DAILY UPDATE COMPLETE - all steps passed
+2026-04-06 11:38:13,981 [INFO] ============================================================
+2026-04-06 12:50:05,640 [INFO] ============================================================
+2026-04-06 12:50:05,640 [INFO] DAILY UPDATE STARTED - 2026-04-06 12:50
+2026-04-06 12:50:05,640 [INFO] ============================================================
+2026-04-06 12:50:05,640 [INFO] --- Fetch new prices ---
+2026-04-06 12:50:09,431 [INFO] SPY: updated
+2026-04-06 12:50:09,808 [INFO] QQQ: updated
+2026-04-06 12:50:10,110 [INFO] AAPL: updated
+2026-04-06 12:50:10,373 [INFO] MSFT: updated
+2026-04-06 12:50:10,577 [INFO] TSLA: updated
+2026-04-06 12:50:10,791 [INFO] GLD: updated
+2026-04-06 12:50:11,034 [INFO] TLT: updated
+2026-04-06 12:50:11,034 [INFO]     OK
+2026-04-06 12:50:11,034 [INFO] --- Fetch new macro ---
+2026-04-06 12:50:12,715 [INFO] VIX: updated
+2026-04-06 12:50:13,166 [INFO] FedFunds: updated
+2026-04-06 12:50:13,624 [INFO] CPI: updated
+2026-04-06 12:50:14,088 [INFO] Unemployment: updated
+2026-04-06 12:50:14,585 [INFO] YieldCurve: updated
+2026-04-06 12:50:14,585 [INFO]     OK
+2026-04-06 12:50:14,585 [INFO] --- Rebuild master.csv ---
+2026-04-06 12:50:14,930 [INFO] master.csv: (2074, 12)
+2026-04-06 12:50:14,931 [INFO]     OK
+2026-04-06 12:50:14,931 [INFO] --- Update sentiment ---
+2026-04-06 12:50:15,000 [INFO] Sentiment updated: 2067 new rows
+2026-04-06 12:50:15,000 [INFO]     OK
+2026-04-06 12:50:15,000 [INFO] --- Retrain LSTM ---
+2026-04-06 12:50:52,923 [INFO] LSTM retrained
+2026-04-06 12:50:52,923 [INFO]     OK
+2026-04-06 12:50:52,924 [INFO] --- Generate signals ---
+2026-04-06 12:50:53,132 [INFO] Signals generated
+2026-04-06 12:50:53,132 [INFO]     OK
+2026-04-06 12:50:53,132 [INFO] --- Generate today prediction ---
+2026-04-06 12:50:53,132 [INFO] Today prediction generated
+2026-04-06 12:50:53,132 [INFO]     OK
+2026-04-06 12:50:53,132 [INFO] --- Update stress ---
+2026-04-06 12:50:53,132 [INFO] Stress test updated
+2026-04-06 12:50:53,132 [INFO]     OK
+2026-04-06 12:50:53,132 [INFO] ============================================================
+2026-04-06 12:50:53,132 [INFO] DAILY UPDATE COMPLETE - all steps passed
+2026-04-06 12:50:53,132 [INFO] ============================================================
+2026-04-06 14:06:49,306 [INFO] ============================================================
+2026-04-06 14:06:49,307 [INFO] DAILY UPDATE STARTED - 2026-04-06 14:06
+2026-04-06 14:06:49,307 [INFO] ============================================================
+2026-04-06 14:06:49,307 [INFO] --- Fetch new prices ---
+2026-04-06 14:06:54,310 [INFO] SPY: updated
+2026-04-06 14:06:54,598 [INFO] QQQ: updated
+2026-04-06 14:06:54,892 [INFO] AAPL: updated
+2026-04-06 14:06:55,127 [INFO] MSFT: updated
+2026-04-06 14:06:55,403 [INFO] TSLA: updated
+2026-04-06 14:06:55,669 [INFO] GLD: updated
+2026-04-06 14:06:55,948 [INFO] TLT: updated
+2026-04-06 14:06:55,948 [INFO]     OK
+2026-04-06 14:06:55,948 [INFO] --- Fetch new macro ---
+2026-04-06 14:06:56,987 [INFO] VIX: updated
+2026-04-06 14:06:57,704 [INFO] FedFunds: updated
+2026-04-06 14:06:58,345 [INFO] CPI: updated
+2026-04-06 14:06:59,018 [INFO] Unemployment: updated
+2026-04-06 14:06:59,718 [INFO] YieldCurve: updated
+2026-04-06 14:06:59,719 [INFO]     OK
+2026-04-06 14:06:59,719 [INFO] --- Rebuild master.csv ---
+2026-04-06 14:07:00,042 [INFO] master.csv: (2074, 12)
+2026-04-06 14:07:00,043 [INFO]     OK
+2026-04-06 14:07:00,043 [INFO] --- Update sentiment ---
+2026-04-06 14:07:00,081 [INFO] Sentiment already up to date
+2026-04-06 14:07:00,082 [INFO]     OK
+2026-04-06 14:07:00,082 [INFO] --- Retrain LSTM ---
+2026-04-06 14:08:31,910 [INFO] LSTM retrained
+2026-04-06 14:08:31,911 [INFO]     OK
+2026-04-06 14:08:31,912 [INFO] --- Generate signals ---
+2026-04-06 14:08:33,573 [INFO] Signals generated
+2026-04-06 14:08:33,574 [INFO]     OK
+2026-04-06 14:08:33,575 [INFO] --- Generate today prediction ---
+2026-04-06 14:08:33,576 [INFO] Today prediction generated
+2026-04-06 14:08:33,576 [INFO]     OK
+2026-04-06 14:08:33,577 [INFO] --- Update stress ---
+2026-04-06 14:08:33,578 [INFO] Stress test updated
+2026-04-06 14:08:33,579 [INFO]     OK
+2026-04-06 14:08:33,580 [INFO] ============================================================
+2026-04-06 14:08:33,580 [INFO] DAILY UPDATE COMPLETE - all steps passed
+2026-04-06 14:08:33,581 [INFO] ============================================================
+2026-04-06 19:16:13,762 [INFO] ============================================================
+2026-04-06 19:16:13,762 [INFO] DAILY UPDATE STARTED - 2026-04-06 19:16
+2026-04-06 19:16:13,762 [INFO] ============================================================
+2026-04-06 19:16:13,763 [INFO] --- Fetch new prices ---
+2026-04-06 19:16:14,973 [INFO] SPY: updated
+2026-04-06 19:16:15,244 [INFO] QQQ: updated
+2026-04-06 19:16:15,503 [INFO] AAPL: updated
+2026-04-06 19:16:15,762 [INFO] MSFT: updated
+2026-04-06 19:16:15,962 [INFO] TSLA: updated
+2026-04-06 19:16:16,194 [INFO] GLD: updated
+2026-04-06 19:16:16,447 [INFO] TLT: updated
+2026-04-06 19:16:16,447 [INFO]     OK
+2026-04-06 19:16:16,447 [INFO] --- Fetch new macro ---
+2026-04-06 19:16:17,394 [INFO] VIX: updated
+2026-04-06 19:16:17,812 [INFO] FedFunds: updated
+2026-04-06 19:16:18,212 [INFO] CPI: updated
+2026-04-06 19:16:18,727 [INFO] Unemployment: updated
+2026-04-06 19:16:19,333 [INFO] YieldCurve: updated
+2026-04-06 19:16:19,334 [INFO]     OK
+2026-04-06 19:16:19,334 [INFO] --- Rebuild master.csv ---
+2026-04-06 19:16:19,761 [INFO] master.csv: (2074, 12)
+2026-04-06 19:16:19,762 [INFO]     OK
+2026-04-06 19:16:19,762 [INFO] --- Update sentiment ---
+2026-04-06 19:16:19,849 [INFO] Sentiment updated: 2068 new rows
+2026-04-06 19:16:19,850 [INFO]     OK
+2026-04-06 19:16:19,850 [INFO] --- Retrain LSTM ---
+2026-04-06 19:16:31,585 [INFO] LSTM retrained
+2026-04-06 19:16:31,585 [INFO]     OK
+2026-04-06 19:16:31,585 [INFO] --- Generate signals ---
+2026-04-06 19:16:31,846 [INFO] Signals generated
+2026-04-06 19:16:31,847 [INFO]     OK
+2026-04-06 19:16:31,847 [INFO] --- Generate today prediction ---
+2026-04-06 19:16:31,848 [INFO] Today prediction generated
+2026-04-06 19:16:31,848 [INFO]     OK
+2026-04-06 19:16:31,848 [INFO] --- Update stress ---
+2026-04-06 19:16:31,848 [INFO] Stress test updated
+2026-04-06 19:16:31,848 [INFO]     OK
+2026-04-06 19:16:31,848 [INFO] ============================================================
+2026-04-06 19:16:31,849 [INFO] DAILY UPDATE COMPLETE - all steps passed
+2026-04-06 19:16:31,849 [INFO] ============================================================
+2026-04-06 19:47:05,072 [INFO] ============================================================
+2026-04-06 19:47:05,073 [INFO] DAILY UPDATE STARTED - 2026-04-06 19:47
+2026-04-06 19:47:05,073 [INFO] ============================================================
+2026-04-06 19:47:05,089 [INFO] --- Fetch new prices ---
+2026-04-06 19:47:09,792 [INFO] SPY: updated
+2026-04-06 19:47:11,540 [INFO] QQQ: updated
+2026-04-06 19:47:16,476 [INFO] AAPL: updated
+2026-04-06 19:47:18,726 [INFO] MSFT: updated
+2026-04-06 19:47:19,105 [INFO] TSLA: updated
+2026-04-06 19:47:19,443 [INFO] GLD: updated
+2026-04-06 19:47:19,840 [INFO] TLT: updated
+2026-04-06 19:47:19,841 [INFO]     OK
+2026-04-06 19:47:19,841 [INFO] --- Fetch new macro ---
+2026-04-06 19:47:19,902 [WARNING] Macro update failed: <urlopen error [Errno 11001] getaddrinfo failed>
+2026-04-06 19:47:19,903 [INFO]     OK
+2026-04-06 19:47:19,903 [INFO] --- Rebuild master.csv ---
+2026-04-06 19:47:20,261 [INFO]     OK
+2026-04-06 19:47:20,261 [INFO] --- Update sentiment ---
+2026-04-06 19:47:20,308 [INFO] Sentiment already up to date
+2026-04-06 19:47:20,308 [INFO]     OK
+2026-04-06 19:47:20,309 [INFO] --- Generate signals (append-only) ---
+2026-04-06 19:47:20,392 [INFO] Signal already exists for today — skipping
+2026-04-06 19:47:20,392 [INFO]     OK
+2026-04-06 19:47:20,393 [INFO] ============================================================
+2026-04-06 19:47:20,394 [INFO] DAILY UPDATE COMPLETE
+2026-04-06 19:47:20,394 [INFO] ============================================================
+2026-04-07 15:10:32,027 [INFO] ============================================================
+2026-04-07 15:10:32,028 [INFO] DAILY UPDATE STARTED - 2026-04-07 15:10
+2026-04-07 15:10:32,028 [INFO] ============================================================
+2026-04-07 15:10:32,037 [INFO] --- Fetch new prices ---
+2026-04-07 15:10:41,681 [INFO] SPY: updated
+2026-04-07 15:10:43,414 [INFO] QQQ: updated
+2026-04-07 15:10:46,504 [INFO] AAPL: updated
+2026-04-07 15:10:48,716 [INFO] MSFT: updated
+2026-04-07 15:10:51,380 [INFO] TSLA: updated
+2026-04-07 15:10:54,470 [INFO] GLD: updated
+2026-04-07 15:11:00,663 [INFO] TLT: updated
+2026-04-07 15:11:00,664 [INFO]     OK
+2026-04-07 15:11:00,664 [INFO] --- Fetch new macro ---
+2026-04-07 15:11:05,090 [INFO] VIX: updated
+2026-04-07 15:11:09,657 [INFO] YieldCurve: updated
+2026-04-07 15:11:09,657 [INFO]     OK
+2026-04-07 15:11:09,657 [INFO] --- Rebuild master.csv ---
+2026-04-07 15:11:10,015 [INFO]     OK
+2026-04-07 15:11:10,016 [INFO] --- Update sentiment ---
+2026-04-07 15:12:48,093 [INFO] AI Sentiment updated: (2080, 8)
+2026-04-07 15:12:48,093 [INFO]     OK
+2026-04-07 15:12:48,093 [INFO] --- Generate signals (append-only) ---
+2026-04-07 15:12:48,125 [ERROR]     FAILED: 'DataFrame' object has no attribute 'name'
+2026-04-07 15:12:48,125 [INFO] ============================================================
+2026-04-07 15:12:48,125 [INFO] DAILY UPDATE COMPLETE
+2026-04-07 15:12:48,126 [INFO] ============================================================
+2026-04-07 15:28:01,622 [INFO] ============================================================
+2026-04-07 15:28:01,622 [INFO] DAILY UPDATE STARTED - 2026-04-07 15:28
+2026-04-07 15:28:01,622 [INFO] ============================================================
+2026-04-07 15:28:01,634 [INFO] No signal found for 2026-04-07 — running full pipeline
+2026-04-07 15:28:01,634 [INFO] --- Fetch new prices ---
+2026-04-07 15:28:02,307 [INFO] SPY: updated to 2026-04-06
+2026-04-07 15:28:02,913 [INFO] QQQ: updated to 2026-04-06
+2026-04-07 15:28:03,169 [INFO] AAPL: updated to 2026-04-06
+2026-04-07 15:28:03,815 [INFO] MSFT: updated to 2026-04-06
+2026-04-07 15:28:04,045 [INFO] TSLA: updated to 2026-04-06
+2026-04-07 15:28:04,279 [INFO] GLD: updated to 2026-04-06
+2026-04-07 15:28:04,594 [INFO] TLT: updated to 2026-04-06
+2026-04-07 15:28:04,594 [INFO]     OK
+2026-04-07 15:28:04,594 [INFO] --- Fetch new macro ---
+2026-04-07 15:28:05,174 [INFO] VIX: updated
+2026-04-07 15:28:06,328 [INFO] YieldCurve: updated
+2026-04-07 15:28:06,329 [INFO]     OK
+2026-04-07 15:28:06,329 [INFO] --- Rebuild master.csv ---
+2026-04-07 15:28:06,597 [INFO]     OK
+2026-04-07 15:28:06,597 [INFO] --- Update sentiment ---
+2026-04-07 15:28:28,684 [INFO] AI Sentiment updated: (2080, 8)
+2026-04-07 15:28:28,685 [INFO]     OK
+2026-04-07 15:28:28,685 [INFO] --- Generate signals (append-only) ---
+2026-04-07 15:28:28,729 [INFO] Sentiment: exact row used for 2026-04-06
+2026-04-07 15:28:28,732 [ERROR]     FAILED: 'DataFrame' object has no attribute 'name'
+2026-04-07 15:28:28,733 [INFO] ============================================================
+2026-04-07 15:28:28,733 [INFO] DAILY UPDATE COMPLETE
+2026-04-07 15:28:28,733 [INFO] ============================================================
+2026-04-09 11:50:07,607 [INFO] ============================================================
+2026-04-09 11:50:07,608 [INFO] DAILY UPDATE STARTED - 2026-04-09 11:50
+2026-04-09 11:50:07,608 [INFO] ============================================================
+2026-04-09 11:50:07,692 [INFO] No signal found for 2026-04-09 — running full pipeline
+2026-04-09 11:50:07,694 [INFO] --- Fetch new prices ---
+2026-04-09 11:50:14,100 [INFO] SPY: updated to 2026-04-08
+2026-04-09 11:50:14,397 [INFO] QQQ: updated to 2026-04-08
+2026-04-09 11:50:14,878 [INFO] AAPL: updated to 2026-04-08
+2026-04-09 11:50:15,196 [INFO] MSFT: updated to 2026-04-08
+2026-04-09 11:50:15,495 [INFO] TSLA: updated to 2026-04-08
+2026-04-09 11:50:15,910 [INFO] GLD: updated to 2026-04-08
+2026-04-09 11:50:16,252 [INFO] TLT: updated to 2026-04-08
+2026-04-09 11:50:16,252 [INFO]     OK
+2026-04-09 11:50:16,252 [INFO] --- Fetch new macro ---
+2026-04-09 11:50:17,297 [INFO] VIX: updated
+2026-04-09 11:50:18,050 [INFO] YieldCurve: updated
+2026-04-09 11:50:18,050 [INFO]     OK
+2026-04-09 11:50:18,051 [INFO] --- Rebuild master.csv ---
+2026-04-09 11:50:18,436 [INFO]     OK
+2026-04-09 11:50:18,437 [INFO] --- Update sentiment ---
+2026-04-09 11:51:48,068 [INFO] AI Sentiment updated: (2082, 8)
+2026-04-09 11:51:48,069 [INFO]     OK
+2026-04-09 11:51:48,069 [INFO] --- Generate signals (append-only) ---
+2026-04-09 11:51:48,135 [INFO] Sentiment: exact row used for 2026-04-08
+2026-04-09 11:51:48,136 [ERROR]     FAILED: 'DataFrame' object has no attribute 'name'
+2026-04-09 11:51:48,137 [INFO] ============================================================
+2026-04-09 11:51:48,137 [INFO] DAILY UPDATE COMPLETE
+2026-04-09 11:51:48,137 [INFO] ============================================================
+2026-04-09 12:09:50,211 [INFO] ============================================================
+2026-04-09 12:09:50,212 [INFO] DAILY UPDATE STARTED - 2026-04-09 12:09
+2026-04-09 12:09:50,212 [INFO] ============================================================
+2026-04-09 12:09:50,227 [INFO] No signal found for 2026-04-09 — running full pipeline
+2026-04-09 12:09:50,227 [INFO] --- Fetch new prices ---
+2026-04-09 12:09:50,974 [INFO] SPY: updated to 2026-04-08
+2026-04-09 12:09:51,173 [INFO] QQQ: updated to 2026-04-08
+2026-04-09 12:09:51,367 [INFO] AAPL: updated to 2026-04-08
+2026-04-09 12:09:51,589 [INFO] MSFT: updated to 2026-04-08
+2026-04-09 12:09:51,760 [INFO] TSLA: updated to 2026-04-08
+2026-04-09 12:09:51,947 [INFO] GLD: updated to 2026-04-08
+2026-04-09 12:09:53,164 [INFO] TLT: updated to 2026-04-08
+2026-04-09 12:09:53,165 [INFO]     OK
+2026-04-09 12:09:53,165 [INFO] --- Fetch new macro ---
+2026-04-09 12:09:53,907 [INFO] VIX: updated
+2026-04-09 12:09:54,602 [INFO] YieldCurve: updated
+2026-04-09 12:09:54,603 [INFO]     OK
+2026-04-09 12:09:54,603 [INFO] --- Rebuild master.csv ---
+2026-04-09 12:09:54,962 [INFO]     OK
+2026-04-09 12:09:54,963 [INFO] --- Update sentiment ---
+2026-04-09 12:10:32,087 [INFO] AI Sentiment updated: (2082, 8)
+2026-04-09 12:10:32,088 [INFO]     OK
+2026-04-09 12:10:32,088 [INFO] --- Generate signals (append-only) ---
+2026-04-09 12:10:32,177 [INFO] Sentiment: exact row used for 2026-04-08
+2026-04-09 12:10:32,178 [ERROR]     FAILED: 'DataFrame' object has no attribute 'name'
+2026-04-09 12:10:32,178 [INFO] ============================================================
+2026-04-09 12:10:32,178 [INFO] DAILY UPDATE COMPLETE
+2026-04-09 12:10:32,178 [INFO] ============================================================
+2026-04-09 12:14:17,648 [INFO] ============================================================
+2026-04-09 12:14:17,648 [INFO] DAILY UPDATE STARTED - 2026-04-09 12:14
+2026-04-09 12:14:17,648 [INFO] BASE_DIR = E:\MarketSignalDetector
+2026-04-09 12:14:17,650 [INFO] ============================================================
+2026-04-09 12:14:17,664 [INFO] No signal found for 2026-04-09 — running full pipeline
+2026-04-09 12:14:17,664 [INFO] Latest signal date in file: 2026-04-02
+2026-04-09 12:14:17,664 [INFO] --- Fetch new prices ---
+2026-04-09 12:14:18,365 [INFO] SPY: updated to 2026-04-08
+2026-04-09 12:14:18,577 [INFO] QQQ: updated to 2026-04-08
+2026-04-09 12:14:18,793 [INFO] AAPL: updated to 2026-04-08
+2026-04-09 12:14:18,997 [INFO] MSFT: updated to 2026-04-08
+2026-04-09 12:14:19,171 [INFO] TSLA: updated to 2026-04-08
+2026-04-09 12:14:19,341 [INFO] GLD: updated to 2026-04-08
+2026-04-09 12:14:19,546 [INFO] TLT: updated to 2026-04-08
+2026-04-09 12:14:19,547 [INFO]     OK
+2026-04-09 12:14:19,547 [INFO] --- Fetch new macro ---
+2026-04-09 12:14:20,219 [INFO] VIX: updated
+2026-04-09 12:14:21,050 [INFO] YieldCurve: updated
+2026-04-09 12:14:21,050 [INFO]     OK
+2026-04-09 12:14:21,050 [INFO] --- Rebuild master.csv ---
+2026-04-09 12:14:21,337 [INFO]     OK
+2026-04-09 12:14:21,337 [INFO] --- Update sentiment ---
+2026-04-09 12:15:05,970 [INFO] AI Sentiment updated: (2082, 8)
+2026-04-09 12:15:05,971 [INFO]     OK
+2026-04-09 12:15:05,972 [INFO] --- Generate signals (append-only) ---
+2026-04-09 12:15:06,033 [INFO] master.csv loaded: 2077 rows, latest = 2026-04-08
+2026-04-09 12:15:06,073 [INFO] sentiment_daily.csv loaded: 2082 rows, latest = 2026-04-08
+2026-04-09 12:15:06,089 [INFO] signals.csv loaded: 2074 rows, latest = 2026-04-02
+2026-04-09 12:15:06,114 [INFO] Generating signal for 2026-04-08...
+2026-04-09 12:15:06,118 [INFO] Sentiment: exact row used for 2026-04-08
+2026-04-09 12:15:06,119 [ERROR]     FAILED: 'DataFrame' object has no attribute 'name'
+2026-04-09 12:15:06,309 [ERROR] Traceback (most recent call last):
+  File "E:\MarketSignalDetector\scheduler\daily_update.py", line 97, in run
+    fn()
+    ~~^^
+  File "E:\MarketSignalDetector\scheduler\daily_update.py", line 304, in generate_signals
+    new_signal = engine.run_single(m_row, f_row, s_row)
+  File "E:\MarketSignalDetector\signals\engine.py", line 271, in run_single
+    master_row.name,
+    ^^^^^^^^^^^^^^^
+  File "C:\Users\Hp\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\pandas\core\generic.py", line 6318, in __getattr__
+    return object.__getattribute__(self, name)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'name'. Did you mean: 'rename'?
+
+2026-04-09 12:15:06,311 [INFO] ============================================================
+2026-04-09 12:15:06,312 [INFO] DAILY UPDATE COMPLETE
+2026-04-09 12:15:06,312 [INFO] ============================================================
+2026-04-09 12:20:04,179 [INFO] ============================================================
+2026-04-09 12:20:04,180 [INFO] DAILY UPDATE STARTED - 2026-04-09 12:20
+2026-04-09 12:20:04,180 [INFO] BASE_DIR = E:\MarketSignalDetector
+2026-04-09 12:20:04,180 [INFO] ============================================================
+2026-04-09 12:20:04,205 [INFO] No signal found for 2026-04-09 — running full pipeline
+2026-04-09 12:20:04,207 [INFO] Latest signal date in file: 2026-04-02
+2026-04-09 12:20:04,207 [INFO] --- Fetch new prices ---
+2026-04-09 12:20:05,139 [INFO] SPY: updated to 2026-04-08
+2026-04-09 12:20:05,443 [INFO] QQQ: updated to 2026-04-08
+2026-04-09 12:20:05,779 [INFO] AAPL: updated to 2026-04-08
+2026-04-09 12:20:06,084 [INFO] MSFT: updated to 2026-04-08
+2026-04-09 12:20:06,334 [INFO] TSLA: updated to 2026-04-08
+2026-04-09 12:20:06,638 [INFO] GLD: updated to 2026-04-08
+2026-04-09 12:20:06,918 [INFO] TLT: updated to 2026-04-08
+2026-04-09 12:20:06,919 [INFO]     OK
+2026-04-09 12:20:06,919 [INFO] --- Fetch new macro ---
+2026-04-09 12:20:07,570 [INFO] VIX: updated
+2026-04-09 12:20:08,186 [INFO] YieldCurve: updated
+2026-04-09 12:20:08,186 [INFO]     OK
+2026-04-09 12:20:08,187 [INFO] --- Rebuild master.csv ---
+2026-04-09 12:20:08,445 [INFO]     OK
+2026-04-09 12:20:08,445 [INFO] --- Update sentiment ---
+2026-04-09 12:21:03,759 [INFO] AI Sentiment updated: (2082, 8)
+2026-04-09 12:21:03,760 [INFO]     OK
+2026-04-09 12:21:03,760 [INFO] --- Generate signals (append-only) ---
+2026-04-09 12:21:03,844 [INFO] master.csv loaded: 2077 rows, latest = 2026-04-08
+2026-04-09 12:21:03,895 [INFO] sentiment_daily.csv loaded: 2082 rows, latest = 2026-04-08
+2026-04-09 12:21:03,916 [INFO] signals.csv loaded: 2074 rows, latest = 2026-04-02
+2026-04-09 12:21:03,947 [INFO] Generating signal for 2026-04-08...
+2026-04-09 12:21:03,950 [INFO] Sentiment: exact row used for 2026-04-08
+2026-04-09 12:21:03,963 [INFO] New signal generated: [{'signal': 'SELL', 'composite_score': -0.0322, 'confidence': 0.0322, 'rationale': 'LSTM P_up=0.50 | High VIX | Regime=RISK_OFF'}]
+2026-04-09 12:21:04,000 [INFO] ✅ Signal successfully written for 2026-04-08
+2026-04-09 12:21:04,002 [INFO] signals.csv now has 2075 rows
+2026-04-09 12:21:04,003 [INFO]     OK
+2026-04-09 12:21:04,004 [INFO] ============================================================
+2026-04-09 12:21:04,004 [INFO] DAILY UPDATE COMPLETE
+2026-04-09 12:21:04,005 [INFO] ============================================================

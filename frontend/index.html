@@ -132,14 +132,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .month-btn.all{border-color:var(--amber);color:var(--amber)}
 .month-btn.all.active{background:var(--amber);color:var(--ink)}
 
-/* ── CHATBOT STYLES (unchanged base + new forecast cards) ── */
 .chat-msg{margin-bottom:1rem;display:flex}
 .chat-msg.user{justify-content:flex-end}.chat-msg.assistant{justify-content:flex-start}
 .chat-bubble{max-width:70%;padding:0.75rem 1rem;font-size:0.75rem;line-height:1.6;border:1px solid}
 .chat-msg.user .chat-bubble{background:var(--ink);color:var(--bg);border-color:var(--ink);border-radius:8px 8px 0 8px}
 .chat-msg.assistant .chat-bubble{background:var(--paper);color:var(--ink);border-color:var(--rule);border-radius:8px 8px 8px 0}
 
-/* ── NEW: 3-day forecast cards ── */
 .forecast-strip{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -199,7 +197,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   letter-spacing:0.06em;
 }
 
-/* probability bar inside each day card */
 .forecast-bar-track{
   margin-top:0.6rem;
   height:3px;
@@ -212,7 +209,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   transition:width 0.5s ease;
 }
 
-/* ── chat quick suggestions ── */
 .chat-suggestions{
   display:flex;
   flex-wrap:wrap;
@@ -253,8 +249,6 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
 <header>
   <div class="logo">Market <em>Signal</em> Detector</div>
   <div class="header-right">
-
-    <!-- ★ YEAR SELECTOR ★ -->
     <div class="year-selector">
       <label>Year</label>
       <button class="year-btn" onclick="selectYear(2022,this)">2022</button>
@@ -263,7 +257,6 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
       <button class="year-btn" onclick="selectYear(2025,this)">2025</button>
       <button class="year-btn active" onclick="selectYear(2026,this)">2026</button>
     </div>
-
     <div class="ws-status">
       <div class="ws-dot" id="wsDot"></div>
       <span id="wsLabel">connecting</span>
@@ -366,7 +359,7 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
   </div>
 </div>
 
-<!-- STRESS — no year filter -->
+<!-- STRESS -->
 <div class="page" id="page-stress">
   <div class="section-head"><h2>Stress Test</h2><span>historical scenario analysis</span></div>
   <div class="stress-grid" id="stressGrid">
@@ -447,22 +440,13 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     CHATBOT — updated section
-     Changes vs original:
-       1. Quick suggestion chips above input
-       2. #forecast-strip appears below messages when API
-          returns predictions[] from the Gemini chat endpoint
-     Everything else (layout, fonts, colors) is identical.
-     ══════════════════════════════════════════════════════════ -->
+<!-- CHATBOT -->
 <div class="page" id="page-chatbot">
   <div style="max-width:780px;margin:0 auto">
     <div class="section-head">
       <h2>AI Assistant</h2>
       <span id="chat-sub">market intelligence — 2026</span>
     </div>
-
-    <!-- Quick suggestion chips (new) -->
     <div class="chat-suggestions" id="chatSuggestions">
       <button class="chat-suggestion-btn" onclick="useSuggestion(this)">What's today's signal?</button>
       <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Give me a 3-day forecast</button>
@@ -470,8 +454,6 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
       <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Should I be cautious this week?</button>
       <button class="chat-suggestion-btn" onclick="useSuggestion(this)">Explain the current sentiment score</button>
     </div>
-
-    <!-- Chat messages -->
     <div id="chat-messages"
          style="height:420px;overflow-y:auto;padding:1rem;
                 background:var(--paper);border:1px solid var(--rule);
@@ -483,11 +465,7 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
         </div>
       </div>
     </div>
-
-    <!-- 3-day forecast strip (hidden until AI returns predictions) -->
     <div id="forecast-strip" style="display:none;margin-bottom:1rem"></div>
-
-    <!-- Input row -->
     <div style="display:flex;gap:8px">
       <input type="text" id="chat-input"
              placeholder="Ask about signals, VIX, forecasts…"
@@ -497,7 +475,6 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
              onkeydown="if(event.key==='Enter') sendChat()">
       <button onclick="sendChat()" class="btn">Send</button>
     </div>
-
   </div>
 </div>
 
@@ -505,7 +482,12 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
 
 <script>
 // ══════════════════════════════════════════
-// YEAR STATE — single source of truth
+// ✅ CHANGE 1: API BASE URL — points to your Render backend
+// ══════════════════════════════════════════
+const API_BASE = 'https://marketsignaldetector.onrender.com';
+
+// ══════════════════════════════════════════
+// YEAR STATE
 // ══════════════════════════════════════════
 let ACTIVE_YEAR = '2026';
 
@@ -563,7 +545,9 @@ function fmtDate(d)   { return d ? String(d).split('T')[0] : ''; }
 function fmt(v,dec)   { const n=parseFloat(v); return isNaN(n)?'—':n.toFixed(dec); }
 function pct(v)       { const n=parseFloat(v)*100; return (n>=0?'+':'')+n.toFixed(2)+'%'; }
 function badge(s)     { return `<span class="signal-badge ${s}">${s.replace('_',' ')}</span>`; }
-async function api(u) { return (await fetch(u)).json(); }
+
+// ✅ CHANGE 2: api() helper now uses API_BASE
+async function api(u) { return (await fetch(API_BASE + u)).json(); }
 
 // ══════════════════════════════════════════
 // CHART SETUP
@@ -615,11 +599,11 @@ function showPage(name, btn) {
 }
 
 // ══════════════════════════════════════════
-// WEBSOCKET
+// ✅ CHANGE 3: WebSocket uses wss:// with your Render URL
 // ══════════════════════════════════════════
 function initWS() {
   try {
-    const ws = new WebSocket(`ws://${location.host}/ws`);
+    const ws = new WebSocket(`wss://marketsignaldetector.onrender.com/ws`);
     ws.onopen    = ()=>{ document.getElementById('wsDot').classList.add('live'); document.getElementById('wsLabel').textContent='live'; };
     ws.onmessage = e =>{ const m=JSON.parse(e.data); if(m.type==='signal'){document.getElementById('lastUpdated').textContent='updated '+new Date().toLocaleTimeString();loadOverview();} };
     ws.onclose   = ()=>{ document.getElementById('wsDot').classList.remove('live'); document.getElementById('wsLabel').textContent='offline'; setTimeout(initWS,5000); };
@@ -815,7 +799,7 @@ async function loadBacktest() {
 }
 
 // ══════════════════════════════════════════
-// STRESS — unchanged, no year filter
+// STRESS
 // ══════════════════════════════════════════
 async function loadStress() {
   const data=await api('/api/stress');
@@ -857,7 +841,8 @@ async function runSimulate() {
       bullish_ratio:parseFloat(document.getElementById('sim-br').value),
       vol_10d:0.15,vol_mean:0.15
     };
-    const r=await fetch('/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    // ✅ CHANGE 4: simulate POST also uses API_BASE
+    const r=await fetch(API_BASE + '/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){const t=await r.text();throw new Error(`Server ${r.status}: ${t}`);}
     const d=await r.json();
     document.getElementById('simResult').style.display='block';
@@ -955,7 +940,8 @@ function renderLiveChart(sigs) {
 
 async function refreshLivePrices() {
   try {
-    const data=await fetch('/api/live_prices').then(r=>r.json());
+    // ✅ CHANGE 5: live prices also uses API_BASE
+    const data=await fetch(API_BASE + '/api/live_prices').then(r=>r.json());
     document.getElementById('ticker-grid').innerHTML=data.map(t=>`
       <div class="card" style="border:none;border-top:none;border-right:1px solid var(--rule)">
         <div class="stat-label">${t.symbol}</div>
@@ -967,10 +953,8 @@ async function refreshLivePrices() {
 }
 
 // ══════════════════════════════════════════
-// CHATBOT — updated to handle predictions[]
+// CHATBOT
 // ══════════════════════════════════════════
-
-/* Click a suggestion chip → fill input → send */
 function useSuggestion(btn) {
   document.getElementById('chat-input').value = btn.textContent.trim();
   sendChat();
@@ -995,20 +979,13 @@ function addTyping() {
   c.scrollTop = c.scrollHeight;
 }
 
-/*
- * renderForecastStrip — renders the 3-day prediction cards
- * that come from the updated /api/chat endpoint.
- * Each prediction object: { day, score, signal, probability }
- */
 function renderForecastStrip(predictions) {
   const strip = document.getElementById('forecast-strip');
   if (!predictions || !predictions.length) {
     strip.style.display = 'none';
     return;
   }
-
   const sigColors = { BUY: C.buy, SELL: C.sell, HOLD: C.hold, RISK_ALERT: C.risk };
-
   strip.innerHTML = `
     <div style="font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;
                 color:var(--muted);font-weight:700;padding:0.5rem 0 0.4rem;
@@ -1021,8 +998,7 @@ function renderForecastStrip(predictions) {
         const score = parseFloat(p.score || 0);
         const prob  = parseFloat(p.probability || 0.5);
         const color = sigColors[sig] || C.muted;
-        /* probability bar: 0→50% fills left half, 1→100% fills right */
-        const barW  = Math.round(Math.abs(prob - 0.5) * 200);  /* 0–100 */
+        const barW  = Math.round(Math.abs(prob - 0.5) * 200);
         const barL  = prob >= 0.5 ? 50 : (50 - barW);
         const barC  = prob >= 0.5 ? C.buy : C.sell;
         return `
@@ -1041,7 +1017,6 @@ function renderForecastStrip(predictions) {
           </div>`;
       }).join('')}
     </div>`;
-
   strip.style.display = 'block';
 }
 
@@ -1050,29 +1025,21 @@ async function sendChat() {
   const msg   = input.value.trim();
   if (!msg) return;
   input.value = '';
-
   addMessage('user', msg);
   addTyping();
-
-  /* hide old forecast while waiting */
   document.getElementById('forecast-strip').style.display = 'none';
-
   try {
-    const res = await fetch('/api/chat', {
+    //  CHANGE 6: chat POST also uses API_BASE
+    const res = await fetch(API_BASE + '/api/chat', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ message: msg })
     }).then(r => r.json());
-
     document.getElementById('typing-indicator')?.remove();
-
     if (res.error) {
       addMessage('assistant', `Error: ${res.error}`);
     } else {
-      /* show Gemini text response */
       addMessage('assistant', res.response || 'No response received.');
-
-      /* if the API returned predictions, render the forecast strip */
       if (res.predictions && res.predictions.length) {
         renderForecastStrip(res.predictions);
       }

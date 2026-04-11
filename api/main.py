@@ -30,6 +30,10 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="frontend/static", check_dir=False), name="static")
 
+@app.get("/")
+def index():
+    return FileResponse(os.path.join(BASE_DIR, "frontend", "index.html"))
+
 # ---------------- BASE DIR FIX ----------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

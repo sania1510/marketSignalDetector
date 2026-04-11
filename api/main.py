@@ -391,7 +391,7 @@ from scheduler.daily_update import DailyUpdater
 
 def run_scheduler():
     updater = DailyUpdater()
-    schedule.every().day.at("07:00").do(updater.run)
+    schedule.every().day.at("01:30").do(updater.run)
 
     while True:
         schedule.run_pending()

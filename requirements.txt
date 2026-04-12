@@ -17,3 +17,4 @@ requests
 google-generativeai
 schedule
 supabase
+python-dotenv

@@ -1,16 +1,22 @@
 # config.py
 import os
 from datetime import date
+from dotenv import load_dotenv
 
-# --- API Keys (set as environment variables, never hardcode) ---
-NEWS_API_KEY  = os.getenv("NEWS_API_KEY", "32d10e6c013741b4a0d6a66f31a6fb15")
-FRED_API_KEY  = os.getenv("FRED_API_KEY", "d53ff20c7998022d5c81e76b9cb08af9")
+load_dotenv()
+
+# --- API Keys ---
+NEWS_API_KEY  = os.getenv("NEWS_API_KEY")
+FRED_API_KEY  = os.getenv("FRED_API_KEY")
+SUPABASE_URL  = os.getenv("SUPABASE_URL")
+SUPABASE_KEY  = os.getenv("SUPABASE_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 PRICE_TICKERS = ["SPY", "QQQ", "AAPL", "MSFT", "TSLA", "GLD", "TLT"]
 BENCHMARK     = "SPY"
 
 START_DATE = "2018-01-01"
-END_DATE   = date.today().isoformat()   # ← always today's date
+END_DATE   = date.today().isoformat()
 
 RAW_DIR       = "data/raw"
 PROCESSED_DIR = "data/processed"

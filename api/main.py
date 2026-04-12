@@ -12,6 +12,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import google.generativeai as genai
+from supabase import create_client
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
@@ -30,22 +31,32 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="frontend/static", check_dir=False), name="static")
 
-@app.get("/")
-def index():
-    return FileResponse(os.path.join(BASE_DIR, "frontend", "index.html"))
-
-# ---------------- BASE DIR FIX ----------------
+# ---------------- BASE DIR ----------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def _load(path):
-    full_path = os.path.join(BASE_DIR, path)
-    if not os.path.exists(full_path):
-        print(f"❌ Missing file: {full_path}")
-        return pd.DataFrame()
+# ---------------- SUPABASE CLIENT ----------------
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ---------------- SUPABASE HELPER ----------------
+def sb_load(table: str, date_col: str = "date") -> pd.DataFrame:
+    """Load a full table from Supabase into a DataFrame."""
     try:
-        return pd.read_csv(full_path, index_col=0, parse_dates=True)
+        res = supabase.table(table).select("*").execute()
+        if not res.data:
+            print(f"⚠️  Supabase table '{table}' is empty")
+            return pd.DataFrame()
+        df = pd.DataFrame(res.data)
+        if date_col in df.columns:
+            df[date_col] = pd.to_datetime(df[date_col])
+            df = df.set_index(date_col).sort_index()
+        elif "Date" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"])
+            df = df.set_index("Date").sort_index()
+        return df
     except Exception as e:
-        print(f"❌ Error loading {path}: {e}")
+        print(f"❌ sb_load({table}) failed: {e}")
         return pd.DataFrame()
 
 # ---------------- INDEX ----------------
@@ -56,17 +67,16 @@ def index():
 # ---------------- OVERVIEW ----------------
 @app.get("/api/overview")
 def overview():
-    signals = _load("data/processed/signals.csv")
-    sent    = _load("data/processed/sentiment_daily.csv")
+    signals = sb_load("signals")
+    sent    = sb_load("sentiment_daily")
 
     if signals.empty:
         return {"error": "No data"}
 
     latest = signals.iloc[-1]
 
-    # Forward-fill sentiment NaNs before reading
-    sent["sentiment_3d_ma"] = sent["sentiment_3d_ma"].ffill().fillna(0)
-    sent["bullish_ratio"]   = sent["bullish_ratio"].ffill().fillna(0.5)
+    sent["sentiment_3d_ma"] = sent["sentiment_3d_ma"].ffill().fillna(0) if not sent.empty else pd.Series([0])
+    sent["bullish_ratio"]   = sent["bullish_ratio"].ffill().fillna(0.5) if not sent.empty else pd.Series([0.5])
 
     return {
         "latest_signal":    latest.get("signal", "HOLD"),
@@ -81,7 +91,7 @@ def overview():
 # ---------------- PRICES ----------------
 @app.get("/api/prices")
 def prices():
-    df = _load("data/processed/master.csv")
+    df = sb_load("master", date_col="Date")
 
     if df.empty or "SPY" not in df.columns:
         return {"dates": [], "prices": []}
@@ -94,26 +104,23 @@ def prices():
 # ---------------- SIGNALS ----------------
 @app.get("/api/signals")
 def signals_api():
-    df = _load("data/processed/signals.csv")
+    df = sb_load("signals")
 
     if df.empty:
         return {"signals": []}
 
-    df = df.reset_index().rename(columns={"index": "date"})
+    df = df.reset_index().rename(columns={"index": "date", "date": "date"})
 
-    return {
-        "signals": df.to_dict(orient="records")
-    }
+    return {"signals": df.to_dict(orient="records")}
 
 # ---------------- SENTIMENT ----------------
 @app.get("/api/sentiment")
 def sentiment():
-    df = _load("data/processed/sentiment_daily.csv")
+    df = sb_load("sentiment_daily")
 
     if df.empty:
         return {"dates": [], "sentiment": [], "bullish": []}
 
-    # Forward-fill NaN so chart is smooth
     df["sentiment_3d_ma"] = df["sentiment_3d_ma"].ffill().fillna(0)
     df["bullish_ratio"]   = df["bullish_ratio"].ffill().fillna(0.5)
 
@@ -126,27 +133,25 @@ def sentiment():
 # ---------------- BACKTEST ----------------
 @app.get("/api/backtest")
 def backtest():
-    equity_path  = os.path.join(BASE_DIR, "data/processed/equity_curve.csv")
-    signals_path = os.path.join(BASE_DIR, "data/processed/signals.csv")
-    master_path  = os.path.join(BASE_DIR, "data/processed/master.csv")
+    equity  = sb_load("equity_curve")
+    master  = sb_load("master", date_col="Date")
+    trades  = sb_load("trades_log")
 
-    if not os.path.exists(equity_path):
+    if equity.empty:
         return {"error": "Run backtest first: python backtest/run_backtest.py"}
 
-    equity = pd.read_csv(equity_path, index_col=0, parse_dates=True)
-    equity.columns   = ["equity"]
-    equity_series    = equity["equity"]
+    if "equity" not in equity.columns:
+        equity.columns = ["equity"]
 
-    # Benchmark: SPY buy-and-hold
-    master = _load("data/processed/master.csv")
-    spy    = master["SPY"].dropna() if not master.empty else pd.Series()
+    equity_series = equity["equity"]
+    spy = master["SPY"].dropna() if not master.empty and "SPY" in master.columns else pd.Series()
 
     initial_capital = equity_series.iloc[0]
 
     if not spy.empty:
-        spy_aligned  = spy.reindex(equity_series.index, method="ffill").dropna()
-        bh_shares    = initial_capital / spy_aligned.iloc[0]
-        benchmark_eq = (bh_shares * spy_aligned).reindex(equity_series.index).ffill()
+        spy_aligned   = spy.reindex(equity_series.index, method="ffill").dropna()
+        bh_shares     = initial_capital / spy_aligned.iloc[0]
+        benchmark_eq  = (bh_shares * spy_aligned).reindex(equity_series.index).ffill()
         benchmark_ret = float((benchmark_eq.iloc[-1] / initial_capital) - 1)
     else:
         benchmark_eq  = equity_series * 0
@@ -154,22 +159,17 @@ def backtest():
 
     total_return = float((equity_series.iloc[-1] / initial_capital) - 1)
 
-    # Drawdown
     rolling_max  = equity_series.cummax()
     drawdown_pct = ((equity_series - rolling_max) / rolling_max * 100).round(2)
     max_drawdown = float(drawdown_pct.min()) / 100
 
-    # Sharpe
     daily_ret  = equity_series.pct_change().dropna()
     excess_ret = daily_ret - 0.04 / 252
     sharpe     = float(excess_ret.mean() / (excess_ret.std() + 1e-9) * np.sqrt(252))
 
-    # Trades
-    trades_path  = os.path.join(BASE_DIR, "data/processed/trades_log.csv")
     win_rate     = 0.0
     total_trades = 0
-    if os.path.exists(trades_path):
-        trades = pd.read_csv(trades_path)
+    if not trades.empty and "pnl_pct" in trades.columns:
         closed = trades[trades["pnl_pct"] != 0.0]
         if len(closed):
             win_rate     = float((closed["pnl_pct"] > 0).mean())
@@ -196,18 +196,15 @@ def backtest():
         }
     }
 
-
 # ---------------- STRESS ----------------
 @app.get("/api/stress")
 def stress():
-    path = os.path.join(BASE_DIR, "data/processed/stress_results.csv")
+    df = sb_load("stress_results")
 
-    if not os.path.exists(path):
+    if df.empty:
         return {"events": []}
 
-    df = pd.read_csv(path)
-
-    # Replace NaN with safe defaults
+    df = df.reset_index(drop=True)
     df = df.fillna({
         "signal_accuracy":  0.0,
         "false_alarm_rate": 0.0,
@@ -248,7 +245,7 @@ def simulate(body: dict):
 # ---------------- LIVE PRICES ----------------
 @app.get("/api/live_prices")
 def live_prices():
-    df = _load("data/processed/master.csv")
+    df = sb_load("master", date_col="Date")
 
     if df.empty:
         return [
@@ -270,8 +267,6 @@ def live_prices():
             price  = round(float(col.iloc[-1]), 2) if len(col) == 1 else 0.0
             change = 0.0
         else:
-            # FIX: Compute real daily % change from the last two trading rows.
-            # Previously this used np.random.uniform(-2, 2) — always fake.
             prev_close = float(col.iloc[-2])
             last_close = float(col.iloc[-1])
             price      = round(last_close, 2)
@@ -316,7 +311,7 @@ async def websocket_endpoint(ws: WebSocket):
         manager.disconnect(ws)
 
 # ---------------- CHAT API ----------------
-GEMINI_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyB5eFVYNPtAsUi4x7V3XwQCFC9AF9dUB7w")
+GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 genai.configure(api_key=GEMINI_KEY)
 
 @app.post("/api/chat")
@@ -326,12 +321,11 @@ async def chat(body: dict):
         return {"error": "No message"}
 
     try:
-        signals = _load("data/processed/signals.csv")
-        sent    = _load("data/processed/sentiment_daily.csv")
-        lstm    = _load("data/processed/lstm_predictions.csv")
-        master  = _load("data/processed/master.csv")
+        signals = sb_load("signals")
+        sent    = sb_load("sentiment_daily")
+        lstm    = sb_load("lstm_predictions")
+        master  = sb_load("master", date_col="Date")
 
-        # ── Pull actual latest values ──
         latest_sig  = signals.iloc[-1]
         latest_sent = sent.iloc[-1]   if not sent.empty   else {}
         latest_lstm = lstm.iloc[-1]   if not lstm.empty   else {}
@@ -342,14 +336,13 @@ async def chat(body: dict):
         confidence      = float(latest_sig.get("confidence", 0))
         rationale       = latest_sig.get("rationale", "")
         vix             = float(latest_sig.get("vix", 20))
-        prob_up         = float(latest_lstm.get("prob_up", 0.5))
+        prob_up         = float(latest_lstm.get("prob_up", 0.5)) if hasattr(latest_lstm, 'get') else 0.5
         sentiment_3d    = float(latest_sent.get("sentiment_3d_ma", 0)) if hasattr(latest_sent, 'get') else 0
         bullish_ratio   = float(latest_sent.get("bullish_ratio", 0.5)) if hasattr(latest_sent, 'get') else 0.5
-        spy_price       = float(latest_price.get("SPY", 0))            if hasattr(latest_price, 'get') else 0
-        signal_date     = str(signals.index[-1].date())                if not signals.empty else "unknown"
+        spy_price       = float(latest_price.get("SPY", 0)) if hasattr(latest_price, 'get') else 0
+        signal_date     = str(signals.index[-1].date()) if not signals.empty else "unknown"
 
-        # ── Last 5 signals for context ──
-        recent = signals.tail(5)[["signal","composite_score"]].to_string()
+        recent = signals.tail(5)[["signal", "composite_score"]].to_string()
 
         system_prompt = f"""You are the AI assistant for Market Signal Detector, a quantitative trading system.
 
@@ -395,11 +388,10 @@ from scheduler.daily_update import DailyUpdater
 
 def run_scheduler():
     updater = DailyUpdater()
-    schedule.every().day.at("01:30").do(updater.run)
+    schedule.every().day.at("07:00").do(updater.run)
 
     while True:
         schedule.run_pending()
         time.sleep(60)
 
-# Run scheduler in background thread
 threading.Thread(target=run_scheduler, daemon=True).start()

@@ -1,4 +1,4 @@
-﻿# scheduler/daily_update.py
+# scheduler/daily_update.py
 
 import sys
 import os
@@ -7,23 +7,14 @@ import traceback
 from datetime import datetime, date
 
 # ============================================================
-# PATH SETUP  — must happen before ANY other imports
+# PATH SETUP
 # ============================================================
 
-# BASE_DIR = the project root  (one level above scheduler/)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, BASE_DIR)
-
-# ✅ Set CWD to project root so every relative path inside
-#    PriceFetcher / MacroFetcher / DataMerger / engine etc. resolves correctly
 os.chdir(BASE_DIR)
 
-REQUIRED_DIRS = [
-    "data/raw/prices",
-    "data/raw/macro",
-    "data/processed",
-    "scheduler"
-]
+REQUIRED_DIRS = ["data/raw/prices", "data/raw/macro", "data/processed", "scheduler"]
 for d in REQUIRED_DIRS:
     os.makedirs(os.path.join(BASE_DIR, d), exist_ok=True)
 
@@ -44,26 +35,88 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ============================================================
-# IMPORTS  (after chdir so config relative paths resolve)
+# IMPORTS
 # ============================================================
 
 import pandas as pd
 import numpy as np
 import yfinance as yf
+from supabase import create_client
 
 from config import PRICE_TICKERS, FRED_API_KEY
 
-# ✅ Build absolute versions of the data dirs so they work
-#    regardless of where the script is launched from.
 PRICE_DIR = os.path.join(BASE_DIR, "data", "raw", "prices")
-MACRO_DIR = os.path.join(BASE_DIR, "data", "raw", "macro")
+MACRO_DIR  = os.path.join(BASE_DIR, "data", "raw", "macro")
+
+# ============================================================
+# SUPABASE CLIENT
+# ============================================================
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set as environment variables")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ============================================================
+# SUPABASE HELPERS
+# ============================================================
+
+def sb_read(table: str) -> pd.DataFrame:
+    """Read all rows from a Supabase table into a DataFrame."""
+    try:
+        res = supabase.table(table).select("*").execute()
+        if res.data:
+            df = pd.DataFrame(res.data)
+            if "date" in df.columns:
+                df = df.set_index("date")
+                df.index = pd.to_datetime(df.index)
+            elif "Date" in df.columns:
+                df = df.set_index("Date")
+                df.index = pd.to_datetime(df.index)
+            return df
+        return pd.DataFrame()
+    except Exception as e:
+        log.error(f"sb_read({table}) failed: {e}")
+        return pd.DataFrame()
+
+
+def sb_upsert(table: str, df: pd.DataFrame, date_col: str = "date"):
+    """Upsert a DataFrame into a Supabase table row by row."""
+    try:
+        df_reset = df.copy()
+        if df_reset.index.name in ("date", "Date") or pd.api.types.is_datetime64_any_dtype(df_reset.index):
+            df_reset = df_reset.reset_index()
+            df_reset = df_reset.rename(columns={df_reset.columns[0]: date_col})
+
+        # Convert datetime columns to string
+        for col in df_reset.columns:
+            if pd.api.types.is_datetime64_any_dtype(df_reset[col]):
+                df_reset[col] = df_reset[col].astype(str)
+
+        # Replace NaN with None
+        df_reset = df_reset.where(pd.notnull(df_reset), None)
+
+        records = df_reset.to_dict(orient="records")
+        # Upsert in batches of 500
+        batch_size = 500
+        for i in range(0, len(records), batch_size):
+            batch = records[i:i + batch_size]
+            supabase.table(table).upsert(batch).execute()
+
+        log.info(f"sb_upsert({table}): {len(records)} rows saved")
+    except Exception as e:
+        log.error(f"sb_upsert({table}) failed: {e}")
+        log.error(traceback.format_exc())
+
 
 # ============================================================
 # PATH HELPER
 # ============================================================
 
 def p(*parts):
-    """Absolute path joined from BASE_DIR."""
     return os.path.join(BASE_DIR, *parts)
 
 
@@ -86,7 +139,7 @@ class DailyUpdater:
         steps = [
             ("Fetch new prices",               self.fetch_new_prices),
             ("Fetch new macro",                self.fetch_new_macro),
-            ("Rebuild master.csv",             self.rebuild_master),
+            ("Rebuild master",                 self.rebuild_master),
             ("Update sentiment",               self.update_sentiment),
             ("Generate signals (append-only)", self.generate_signals),
         ]
@@ -99,7 +152,7 @@ class DailyUpdater:
                 log.info("    OK")
             except Exception as e:
                 log.error(f"    FAILED: {e}")
-                log.error(traceback.format_exc())   # full traceback in log
+                log.error(traceback.format_exc())
                 success = False
 
         log.info("=" * 60)
@@ -112,28 +165,20 @@ class DailyUpdater:
     # ============================================================
 
     def already_updated_today(self):
-        path = p("data", "processed", "signals.csv")
-        if not os.path.exists(path):
-            log.info("signals.csv not found — will run full pipeline")
-            return False
-
-        df = pd.read_csv(path, index_col=0, parse_dates=True)
-        if df.empty:
-            return False
-
-        today_str = date.today().strftime("%Y-%m-%d")
-        already   = any(str(idx)[:10] == today_str for idx in df.index)
-
-        if already:
-            log.info(f"Signal for {today_str} already exists — skipping")
-        else:
+        try:
+            today_str = date.today().strftime("%Y-%m-%d")
+            res = supabase.table("signals").select("date").eq("date", today_str).execute()
+            if res.data:
+                log.info(f"Signal for {today_str} already exists in Supabase — skipping")
+                return True
             log.info(f"No signal for {today_str} yet — running pipeline")
-            log.info(f"Latest entry in signals.csv: {str(df.index.max())[:10]}")
-
-        return already
+            return False
+        except Exception as e:
+            log.warning(f"already_updated_today check failed: {e} — running pipeline anyway")
+            return False
 
     # ============================================================
-    # STEP 1 — PRICES
+    # STEP 1 — PRICES (still uses local raw files as cache)
     # ============================================================
 
     def fetch_new_prices(self):
@@ -167,7 +212,7 @@ class DailyUpdater:
             log.info(f"{ticker}: updated to {df_new.index.max().date()}")
 
     # ============================================================
-    # STEP 2 — MACRO
+    # STEP 2 — MACRO (still uses local raw files as cache)
     # ============================================================
 
     def fetch_new_macro(self):
@@ -196,7 +241,7 @@ class DailyUpdater:
             log.warning(f"Macro update failed: {e}")
 
     # ============================================================
-    # STEP 3 — REBUILD MASTER
+    # STEP 3 — REBUILD MASTER → save to Supabase
     # ============================================================
 
     def rebuild_master(self):
@@ -206,10 +251,18 @@ class DailyUpdater:
 
         prices = PriceFetcher().get_close_prices()
         macro  = MacroFetcher().fetch_all()
-        DataMerger().merge(prices, macro, None)
+        master = DataMerger().merge(prices, macro, None)
+
+        # Also save to local CSV (other parts of pipeline read it)
+        master_path = p("data", "processed", "master.csv")
+        master.to_csv(master_path)
+        log.info(f"master.csv saved locally: {len(master)} rows")
+
+        # Save to Supabase
+        sb_upsert("master", master, date_col="Date")
 
     # ============================================================
-    # STEP 4 — SENTIMENT
+    # STEP 4 — SENTIMENT → save to Supabase
     # ============================================================
 
     def update_sentiment(self):
@@ -218,14 +271,22 @@ class DailyUpdater:
             df = NewsFetcher().build_sentiment()
             if df.empty:
                 log.warning("Sentiment empty — keeping existing data")
-            else:
-                log.info(f"Sentiment updated: {df.shape}")
+                return
+
+            # Save to local CSV
+            sentiment_path = p("data", "processed", "sentiment_daily.csv")
+            df.to_csv(sentiment_path)
+            log.info(f"sentiment_daily.csv saved locally: {df.shape}")
+
+            # Save to Supabase
+            sb_upsert("sentiment_daily", df)
+
         except Exception as e:
             log.error(f"Sentiment update failed: {e}")
             log.error(traceback.format_exc())
 
     # ============================================================
-    # STEP 5 — GENERATE SIGNAL FOR TODAY (append-only)
+    # STEP 5 — GENERATE SIGNAL → save to Supabase
     # ============================================================
 
     def generate_signals(self):
@@ -233,28 +294,26 @@ class DailyUpdater:
 
         master_path    = p("data", "processed", "master.csv")
         sentiment_path = p("data", "processed", "sentiment_daily.csv")
-        signals_path   = p("data", "processed", "signals.csv")
 
-        # --- load master ---
+        # --- load master (from local CSV built in step 3) ---
         master = pd.read_csv(master_path, index_col=0, parse_dates=True)
-        log.info(f"master.csv  : {len(master)} rows  latest={str(master.index.max())[:10]}")
+        log.info(f"master: {len(master)} rows  latest={str(master.index.max())[:10]}")
 
         # --- load sentiment ---
         sentiment = pd.read_csv(sentiment_path, index_col=0, parse_dates=True)
-        log.info(f"sentiment   : {len(sentiment)} rows  latest={str(sentiment.index.max())[:10]}")
+        log.info(f"sentiment: {len(sentiment)} rows  latest={str(sentiment.index.max())[:10]}")
 
-        # --- load existing signals ---
-        if os.path.exists(signals_path):
-            existing = pd.read_csv(signals_path, index_col=0, parse_dates=True)
-            log.info(f"signals.csv : {len(existing)} rows  latest={str(existing.index.max())[:10]}")
+        # --- load existing signals from Supabase ---
+        existing = sb_read("signals")
+        if not existing.empty:
+            log.info(f"signals from Supabase: {len(existing)} rows  latest={str(existing.index.max())[:10]}")
         else:
-            existing = pd.DataFrame()
-            log.info("signals.csv : not found — will create fresh")
+            log.info("No signals in Supabase yet — will create fresh")
 
         latest_date     = master.index.max()
         latest_date_str = str(latest_date)[:10]
 
-        # skip if signal already exists for this date
+        # Skip if signal already exists
         already_exists = (
             not existing.empty and
             any(str(idx)[:10] == latest_date_str for idx in existing.index)
@@ -267,52 +326,39 @@ class DailyUpdater:
 
         engine = SignalEngine(SignalConfig())
 
-        # ================================================================
-        # KEY FIX — engine.run_single() calls:
-        #
-        #   master_row.name          → needs Series  (.name = the date)
-        #   master_row["VIX"]        → needs Series or dict
-        #   master_row.get("VIX",20) → needs Series  (Series has .get())
-        #   forecast_row["prob_up"]  → needs Series or dict
-        #   sentiment_row["sentiment_3d_ma"] → needs Series or dict
-        #
-        # pandas .loc[label]   (no list) → returns a Series  ✅
-        # pandas .loc[[label]] (list)    → returns a DataFrame ✗
-        # ================================================================
+        m_row = master.loc[latest_date]
 
-        # master_row — Series
-        m_row = master.loc[latest_date]          # Series; .name == latest_date
-
-        # sentiment_row — Series (exact match or forward-fill)
         if latest_date in sentiment.index:
-            s_row = sentiment.loc[latest_date]   # Series
+            s_row = sentiment.loc[latest_date]
             log.info(f"Sentiment: exact row for {latest_date_str}")
         else:
             prior = sentiment[sentiment.index <= latest_date]
             if not prior.empty:
-                s_row = prior.iloc[-1]           # Series
-                log.warning(
-                    f"No sentiment for {latest_date_str} — "
-                    f"forward-filling from {str(prior.index[-1])[:10]}"
-                )
+                s_row = prior.iloc[-1]
+                log.warning(f"No sentiment for {latest_date_str} — forward-filling")
             else:
                 s_row = None
                 log.warning("No sentiment at all — running without it")
 
-        # forecast_row — plain dict is fine; engine only does forecast_row["prob_up"]
         f_row = {"prob_up": 0.5}
 
         new_signal = engine.run_single(m_row, f_row, s_row)
-        log.info(f"Generated  : {new_signal.to_dict(orient='records')}")
+        log.info(f"Generated: {new_signal.to_dict(orient='records')}")
 
-        # append and save
-        combined = pd.concat([existing, new_signal])
-        combined = combined[~combined.index.duplicated(keep="first")]
-        combined.sort_index(inplace=True)
+        # Save new signal to Supabase (upsert = safe, no duplicates)
+        sb_upsert("signals", new_signal)
+
+        # Also update local CSV for any local tools that need it
+        signals_path = p("data", "processed", "signals.csv")
+        if not existing.empty:
+            combined = pd.concat([existing, new_signal])
+            combined = combined[~combined.index.duplicated(keep="first")]
+            combined.sort_index(inplace=True)
+        else:
+            combined = new_signal
         combined.to_csv(signals_path)
 
-        log.info(f"✅ Signal written for {latest_date_str} "
-                 f"(signals.csv now has {len(combined)} rows)")
+        log.info(f"✅ Signal written for {latest_date_str}")
 
 
 # ============================================================

@@ -16,3 +16,4 @@ plotly
 requests
 google-generativeai
 schedule
+supabase

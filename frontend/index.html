@@ -249,13 +249,9 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
 <header>
   <div class="logo">Market <em>Signal</em> Detector</div>
   <div class="header-right">
-    <div class="year-selector">
+    <div class="year-selector" id="yearSelector">
       <label>Year</label>
-      <button class="year-btn" onclick="selectYear(2022,this)">2022</button>
-      <button class="year-btn" onclick="selectYear(2023,this)">2023</button>
-      <button class="year-btn" onclick="selectYear(2024,this)">2024</button>
-      <button class="year-btn" onclick="selectYear(2025,this)">2025</button>
-      <button class="year-btn active" onclick="selectYear(2026,this)">2026</button>
+      <span style="font-size:0.62rem;color:var(--muted)">loading…</span>
     </div>
     <div class="ws-status">
       <div class="ws-dot" id="wsDot"></div>
@@ -265,7 +261,7 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
   </div>
 </header>
 
-<div class="year-banner" id="yearBanner">Viewing: 2026 Data</div>
+<div class="year-banner" id="yearBanner">Loading data…</div>
 
 <nav>
   <button class="tab active" onclick="showPage('overview',this)">Overview</button>
@@ -482,19 +478,26 @@ hr{border:none;border-top:1px solid var(--rule);margin:1.25rem 0}
 
 <script>
 // ══════════════════════════════════════════
-// ✅ CHANGE 1: API BASE URL — points to your Render backend
+// API CONFIG
 // ══════════════════════════════════════════
-const API_BASE = 'https://marketsignaldetector.onrender.com';
+const API_BASE = window.__API_BASE__ || document.querySelector('meta[name="api-base"]')?.content?.trim() || '';
 
 // ══════════════════════════════════════════
 // YEAR STATE
 // ══════════════════════════════════════════
-let ACTIVE_YEAR = '2026';
+let ACTIVE_YEAR = String(new Date().getFullYear());
+let AVAILABLE_YEARS = [];
 
-function selectYear(year, btn) {
-  ACTIVE_YEAR = String(year);
-  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function renderYearButtons(years) {
+  AVAILABLE_YEARS = years;
+  const wrap = document.getElementById('yearSelector');
+  if (!wrap) return;
+  wrap.innerHTML = `<label>Year</label>${years.length
+    ? years.map(year => `<button class="year-btn ${String(year) === ACTIVE_YEAR ? 'active' : ''}" data-year="${year}" onclick="selectYear('${year}', this)">${year}</button>`).join('')
+    : '<span style="font-size:0.62rem;color:var(--muted)">no data</span>'}`;
+}
+
+function updateYearLabels() {
   document.getElementById('yearBanner').textContent = `Viewing: ${ACTIVE_YEAR} Data`;
   const labels = {
     'ov-sub':          `${ACTIVE_YEAR} signal data`,
@@ -515,6 +518,13 @@ function selectYear(year, btn) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
   });
+}
+
+function selectYear(year, btn) {
+  ACTIVE_YEAR = String(year);
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+  (btn || document.querySelector(`.year-btn[data-year="${ACTIVE_YEAR}"]`))?.classList.add('active');
+  updateYearLabels();
   _activeSignalMonth = 'all';
   _activeLiveMonth   = 'all';
   document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
@@ -526,9 +536,27 @@ function selectYear(year, btn) {
   if (active === 'live')      loadLivePage();
 }
 
+function guessYears(signals = []) {
+  return [...new Set((signals || [])
+    .map(item => String(item.date || '').slice(0, 4))
+    .filter(year => /^\d{4}$/.test(year)))]
+    .sort();
+}
+
 // ══════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════
+function joinApiUrl(path) {
+  return API_BASE ? `${API_BASE.replace(/\/+$/, '')}${path}` : path;
+}
+function resolveWsUrl(path) {
+  const base = new URL(API_BASE || window.location.origin, window.location.origin);
+  base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+  base.pathname = path;
+  base.search = '';
+  base.hash = '';
+  return base.toString();
+}
 function onlyYear(arr) {
   return (arr || []).filter(item => String(item.date || '').startsWith(ACTIVE_YEAR));
 }
@@ -546,8 +574,16 @@ function fmt(v,dec)   { const n=parseFloat(v); return isNaN(n)?'—':n.toFixed(d
 function pct(v)       { const n=parseFloat(v)*100; return (n>=0?'+':'')+n.toFixed(2)+'%'; }
 function badge(s)     { return `<span class="signal-badge ${s}">${s.replace('_',' ')}</span>`; }
 
-// ✅ CHANGE 2: api() helper now uses API_BASE
-async function api(u) { return (await fetch(API_BASE + u)).json(); }
+async function api(u) {
+  const res = await fetch(joinApiUrl(u));
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Request failed (${res.status}): ${text || u}`);
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Invalid JSON from ${u}`);
+  }
+}
 
 // ══════════════════════════════════════════
 // CHART SETUP
@@ -603,7 +639,7 @@ function showPage(name, btn) {
 // ══════════════════════════════════════════
 function initWS() {
   try {
-    const ws = new WebSocket(`wss://marketsignaldetector.onrender.com/ws`);
+    const ws = new WebSocket(resolveWsUrl('/ws'));
     ws.onopen    = ()=>{ document.getElementById('wsDot').classList.add('live'); document.getElementById('wsLabel').textContent='live'; };
     ws.onmessage = e =>{ const m=JSON.parse(e.data); if(m.type==='signal'){document.getElementById('lastUpdated').textContent='updated '+new Date().toLocaleTimeString();loadOverview();} };
     ws.onclose   = ()=>{ document.getElementById('wsDot').classList.remove('live'); document.getElementById('wsLabel').textContent='offline'; setTimeout(initWS,5000); };
@@ -841,8 +877,7 @@ async function runSimulate() {
       bullish_ratio:parseFloat(document.getElementById('sim-br').value),
       vol_10d:0.15,vol_mean:0.15
     };
-    // ✅ CHANGE 4: simulate POST also uses API_BASE
-    const r=await fetch(API_BASE + '/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(joinApiUrl('/api/simulate'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){const t=await r.text();throw new Error(`Server ${r.status}: ${t}`);}
     const d=await r.json();
     document.getElementById('simResult').style.display='block';
@@ -940,8 +975,7 @@ function renderLiveChart(sigs) {
 
 async function refreshLivePrices() {
   try {
-    // ✅ CHANGE 5: live prices also uses API_BASE
-    const data=await fetch(API_BASE + '/api/live_prices').then(r=>r.json());
+    const data=await fetch(joinApiUrl('/api/live_prices')).then(r=>r.json());
     document.getElementById('ticker-grid').innerHTML=data.map(t=>`
       <div class="card" style="border:none;border-top:none;border-right:1px solid var(--rule)">
         <div class="stat-label">${t.symbol}</div>
@@ -1029,8 +1063,7 @@ async function sendChat() {
   addTyping();
   document.getElementById('forecast-strip').style.display = 'none';
   try {
-    //  CHANGE 6: chat POST also uses API_BASE
-    const res = await fetch(API_BASE + '/api/chat', {
+    const res = await fetch(joinApiUrl('/api/chat'), {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ message: msg })
@@ -1053,8 +1086,26 @@ async function sendChat() {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-loadOverview();
-initWS();
+async function initApp() {
+  try {
+    const data = await api('/api/signals');
+    const years = guessYears(data.signals || []);
+    if (years.length) {
+      ACTIVE_YEAR = years[years.length - 1];
+      renderYearButtons(years);
+    } else {
+      renderYearButtons([]);
+    }
+  } catch (e) {
+    console.warn('Initial signal load failed:', e);
+    renderYearButtons([]);
+  }
+  updateYearLabels();
+  loadOverview();
+  initWS();
+}
+
+initApp();
 </script>
 </body>
 </html>

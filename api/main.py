@@ -39,6 +39,15 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
+def safe_float(value, default: float = 0.0) -> float:
+    try:
+        if value is None or pd.isna(value):
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
 # ---------------- SUPABASE HELPER ----------------
 def sb_load(table: str, date_col: str = "date") -> pd.DataFrame:
     """Load a full table from Supabase into a DataFrame."""
@@ -78,12 +87,14 @@ def overview():
     sent["sentiment_3d_ma"] = sent["sentiment_3d_ma"].ffill().fillna(0) if not sent.empty else pd.Series([0])
     sent["bullish_ratio"]   = sent["bullish_ratio"].ffill().fillna(0.5) if not sent.empty else pd.Series([0.5])
 
+    sent_latest = sent.iloc[-1] if not sent.empty else {}
+
     return {
-        "latest_signal":    latest.get("signal", "HOLD"),
-        "composite_score":  float(latest.get("composite_score", 0)),
-        "vix":              float(latest.get("vix", 20)),
-        "sentiment_3d_ma":  float(sent.iloc[-1].get("sentiment_3d_ma", 0)) if not sent.empty else 0,
-        "bullish_ratio":    float(sent.iloc[-1].get("bullish_ratio", 0))   if not sent.empty else 0,
+        "latest_signal":    latest.get("signal") or "HOLD",
+        "composite_score":  safe_float(latest.get("composite_score"), 0),
+        "vix":              safe_float(latest.get("vix"), 20),
+        "sentiment_3d_ma":  safe_float(sent_latest.get("sentiment_3d_ma", 0), 0),
+        "bullish_ratio":    safe_float(sent_latest.get("bullish_ratio", 0), 0),
         "total_days":       len(signals),
         "signal_counts":    signals["signal"].value_counts().to_dict()
     }
@@ -331,15 +342,15 @@ async def chat(body: dict):
         latest_lstm = lstm.iloc[-1]   if not lstm.empty   else {}
         latest_price= master.iloc[-1] if not master.empty else {}
 
-        actual_signal   = latest_sig.get("signal", "HOLD")
-        composite_score = float(latest_sig.get("composite_score", 0))
-        confidence      = float(latest_sig.get("confidence", 0))
+        actual_signal   = latest_sig.get("signal") or "HOLD"
+        composite_score = safe_float(latest_sig.get("composite_score"), 0)
+        confidence      = safe_float(latest_sig.get("confidence"), 0)
         rationale       = latest_sig.get("rationale", "")
-        vix             = float(latest_sig.get("vix", 20))
-        prob_up         = float(latest_lstm.get("prob_up", 0.5)) if hasattr(latest_lstm, 'get') else 0.5
-        sentiment_3d    = float(latest_sent.get("sentiment_3d_ma", 0)) if hasattr(latest_sent, 'get') else 0
-        bullish_ratio   = float(latest_sent.get("bullish_ratio", 0.5)) if hasattr(latest_sent, 'get') else 0.5
-        spy_price       = float(latest_price.get("SPY", 0)) if hasattr(latest_price, 'get') else 0
+        vix             = safe_float(latest_sig.get("vix"), 20)
+        prob_up         = safe_float(latest_lstm.get("prob_up", 0.5), 0.5) if hasattr(latest_lstm, 'get') else 0.5
+        sentiment_3d    = safe_float(latest_sent.get("sentiment_3d_ma", 0), 0) if hasattr(latest_sent, 'get') else 0
+        bullish_ratio   = safe_float(latest_sent.get("bullish_ratio", 0.5), 0.5) if hasattr(latest_sent, 'get') else 0.5
+        spy_price       = safe_float(latest_price.get("SPY", 0), 0) if hasattr(latest_price, 'get') else 0
         signal_date     = str(signals.index[-1].date()) if not signals.empty else "unknown"
 
         recent = signals.tail(5)[["signal", "composite_score"]].to_string()
